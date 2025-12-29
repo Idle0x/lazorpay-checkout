@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 228, 228, 231;
+    --background-start-rgb: 5, 5, 5;
+      --background-end-rgb: 10, 10, 15;
+      }
+
+      body {
+        color: rgb(var(--foreground-rgb));
+          background: linear-gradient(
+                to bottom,
+                      transparent,
+                            rgb(var(--background-end-rgb))
+                                )
+                                    rgb(var(--background-start-rgb));
+                                      min-height: 100vh;
+                                        font-family: monospace; /* The Schematic Look */
+                                        }
+
+                                        /* Custom Scrollbar for the X-Ray Console */
+                                        ::-webkit-scrollbar {
+                                          width: 8px;
+                                          }
+                                          ::-webkit-scrollbar-track {
+                                            background: #0a0a0f;
+                                            }
+                                            ::-webkit-scrollbar-thumb {
+                                              background: #27272a;
+                                                border-radius: 4px;
+                                                }
+                                                ::-webkit-scrollbar-thumb:hover {
+                                                  background: #3f3f46;
+                                                  }
