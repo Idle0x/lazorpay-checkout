@@ -5,8 +5,9 @@ export const APP_CONFIG = {
   RPC_URL: "https://api.devnet.solana.com",
   PORTAL_URL: "https://portal.lazor.sh",
   PAYMASTER_URL: "https://kora.devnet.lazorkit.com",
-  // A valid Solana Devnet Public Key (randomly generated)
-  MERCHANT_ADDRESS: "H7a2tqQ9Q5xJ9Q5xJ9Q5xJ9Q5xJ9Q5xJ9Q5xJ9Q5xJ9", 
+  
+  MERCHANT_ADDRESS: "FvyYz9tqnCmG4XYrRKFG4fCrsUwK7T3KJsd97MFWGSiy", 
+  
   APP_NAME: "LazorPay Checkout",
   APP_URL: "https://lazorpay.vercel.app",
 };
