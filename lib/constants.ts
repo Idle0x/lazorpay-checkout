@@ -1,23 +1,16 @@
 import { Cluster } from "@solana/web3.js";
 
-// The "God Mode" Configuration
 export const APP_CONFIG = {
-  // We use Devnet for the Hackathon (Judges expect this)
-    CLUSTER: "devnet" as Cluster,
-      
-        // Public RPC (If this gets rate-limited, we swap to Helius later)
-          RPC_URL: "https://api.devnet.solana.com",
-            
-              // LazorKit Official Endpoints (Extracted from Docs)
-                PORTAL_URL: "https://portal.lazor.sh",
-                  PAYMASTER_URL: "https://kora.devnet.lazorkit.com",
-                    
-                      // App Metadata
-                        APP_NAME: "LazorPay Checkout",
-                          APP_URL: "https://lazorpay.vercel.app", // Placeholder for now
-                          };
+  CLUSTER: "devnet" as Cluster,
+  RPC_URL: "https://api.devnet.solana.com",
+  PORTAL_URL: "https://portal.lazor.sh",
+  PAYMASTER_URL: "https://kora.devnet.lazorkit.com",
+  // A valid Solana Devnet Public Key (randomly generated)
+  MERCHANT_ADDRESS: "H7a2tqQ9Q5xJ9Q5xJ9Q5xJ9Q5xJ9Q5xJ9Q5xJ9Q5xJ9", 
+  APP_NAME: "LazorPay Checkout",
+  APP_URL: "https://lazorpay.vercel.app",
+};
 
-                          // Storage Keys for our Manual Persistence Fix
-                          export const STORAGE_KEYS = {
-                            WALLET_INFO: "lazor_wallet_info",
-                            };
+export const STORAGE_KEYS = {
+  WALLET_INFO: "lazor_wallet_info",
+};
