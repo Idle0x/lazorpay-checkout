@@ -4,33 +4,37 @@
 
 :root {
   --foreground-rgb: 228, 228, 231;
-    --background-start-rgb: 5, 5, 5;
-      --background-end-rgb: 10, 10, 15;
-      }
+  --background-start-rgb: 5, 5, 5;
+  --background-end-rgb: 10, 10, 15;
+}
 
-      body {
-        color: rgb(var(--foreground-rgb));
-          background: linear-gradient(
-                to bottom,
-                      transparent,
-                            rgb(var(--background-end-rgb))
-                                )
-                                    rgb(var(--background-start-rgb));
-                                      min-height: 100vh;
-                                        font-family: monospace; /* The Schematic Look */
-                                        }
+body {
+  color: rgb(var(--foreground-rgb));
+  background: #050505; /* Cyber Black */
+  min-height: 100vh;
+  font-family: monospace;
+}
 
-                                        /* Custom Scrollbar for the X-Ray Console */
-                                        ::-webkit-scrollbar {
-                                          width: 8px;
-                                          }
-                                          ::-webkit-scrollbar-track {
-                                            background: #0a0a0f;
-                                            }
-                                            ::-webkit-scrollbar-thumb {
-                                              background: #27272a;
-                                                border-radius: 4px;
-                                                }
-                                                ::-webkit-scrollbar-thumb:hover {
-                                                  background: #3f3f46;
-                                                  }
+/* --- FORCE NEO-TOKYO THEME --- */
+/* We define these manually to ensure they load */
+
+.text-neon-green { color: #10B981 !important; }
+.bg-neon-green { background-color: #10B981 !important; }
+.border-neon-green { border-color: #10B981 !important; }
+
+.text-neon-blue { color: #3B82F6 !important; }
+.bg-neon-blue { background-color: #3B82F6 !important; }
+.border-neon-blue { border-color: #3B82F6 !important; }
+
+.text-neon-pink { color: #EC4899 !important; }
+.bg-neon-pink { background-color: #EC4899 !important; }
+.border-neon-pink { border-color: #EC4899 !important; }
+
+.text-cyber-muted { color: #A1A1AA !important; }
+.border-cyber-border { border-color: #27272A !important; }
+.bg-cyber-gray { background-color: #18181B !important; }
+
+/* Custom Scrollbar */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: #0a0a0f; }
+::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; }
