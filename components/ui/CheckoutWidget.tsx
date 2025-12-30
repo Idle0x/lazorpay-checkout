@@ -11,60 +11,53 @@ import { APP_CONFIG } from "@/lib/constants";
 
 export function CheckoutWidget() {
   const { connect, signAndSendTransaction } = useWallet();
-  const { isConnected, wallet } = useLazorContext();
+  // Get the new refreshSession function
+  const { isConnected, wallet, refreshSession } = useLazorContext();
   const devConsole = useConsole();
   
   const [isGasless, setIsGasless] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false); // Controls the spinner
+  const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [signature, setSignature] = useState("");
   const [quantity, setQuantity] = useState(1);
+  const [signature, setSignature] = useState("");
 
   const ITEM_PRICE = 0.05;
 
-  // --- FIX 1: THE WATCHDOG ---
-  // If the wallet connects (via local storage or successful login), 
-  // FORCE the processing spinner to stop immediately.
+  // --- AGGRESSIVE POLLING FIX ---
+  // While processing, check for the wallet every 500ms.
+  // This saves us if the browser "wakes up" after the auth tab closes.
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isProcessing && !isConnected) {
+      interval = setInterval(() => {
+        console.log("🔍 Polling for wallet...");
+        refreshSession(); 
+      }, 500);
+    }
+    return () => clearInterval(interval);
+  }, [isProcessing, isConnected, refreshSession]);
+
+  // Stop spinner immediately if connected
   useEffect(() => {
     if (isConnected && wallet) {
-      console.log("Wallet detected - Stopping spinner");
       setIsProcessing(false);
     }
   }, [isConnected, wallet]);
 
-  // --- FIX 2: TIMEOUT SAFETY ---
-  // If processing takes longer than 15 seconds, kill it automatically so the button doesn't die.
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (isProcessing) {
-      timer = setTimeout(() => {
-        setIsProcessing(false);
-        safeLog("[TIMEOUT] Operation took too long. Please try again.", "warning");
-      }, 15000);
-    }
-    return () => clearTimeout(timer);
-  }, [isProcessing]);
-
   const safeLog = (msg: string, type: "info" | "success" | "warning" | "error" = "info") => {
-    try {
-        if (devConsole && devConsole.addLog) devConsole.addLog(msg, type);
-        console.log(`[${type.toUpperCase()}] ${msg}`);
-    } catch (e) { console.error(e); }
+    try { if (devConsole?.addLog) devConsole.addLog(msg, type); } catch (e) {}
   };
 
   const handleAction = async () => {
     setIsProcessing(true);
 
     try {
-      // SCENARIO A: NOT CONNECTED -> LOGIN
       if (!isConnected) {
         safeLog("[AUTH] Requesting Passkey...", "info");
         await connect();
-        // We do NOT need to setProcessing(false) here manually.
-        // The useEffect above will detect the connection and do it for us.
-      } 
-      // SCENARIO B: CONNECTED -> BUY
-      else {
+        // Force an immediate check after the promise returns
+        refreshSession();
+      } else {
         if (!wallet) throw new Error("Wallet not found");
 
         const totalCost = quantity * ITEM_PRICE;
@@ -84,7 +77,6 @@ export function CheckoutWidget() {
         if (isGasless) safeLog("[PAYMASTER] Requesting Sponsorship...", "warning");
 
         const sig = await signAndSendTransaction(payload);
-        
         setSignature(sig);
         safeLog(`[CHAIN] Success!`, "success");
         setIsSuccess(true);
@@ -92,13 +84,13 @@ export function CheckoutWidget() {
       }
     } catch (e: any) {
       console.error(e);
-      safeLog(`[ERROR] ${e.message}`, "error");
-      setIsProcessing(false); // Stop spinner on error
-      
-      // If it's the "Already Connected" bug, we force a reload to clear state
-      if (e.message.includes("already connected")) {
-         window.location.reload();
+      // Don't log "Already connected" as an error, just handle it
+      if (e.message?.includes("already connected")) {
+          refreshSession();
+          return;
       }
+      safeLog(`[ERROR] ${e.message}`, "error");
+      setIsProcessing(false);
     }
   };
 
@@ -109,19 +101,13 @@ export function CheckoutWidget() {
                 <CheckCircle className="w-8 h-8 text-black" />
             </div>
             <h2 className="text-2xl font-bold text-white">PAYMENT COMPLETE</h2>
-            <button 
-                onClick={() => { setIsSuccess(false); setSignature(""); }}
-                className="text-cyber-muted underline text-xs mt-4"
-            >
-                Reset Demo
-            </button>
+            <button onClick={() => { setIsSuccess(false); setSignature(""); }} className="text-cyber-muted underline text-xs mt-4">Reset Demo</button>
         </CyberCard>
     )
   }
 
   return (
     <CyberCard className="space-y-6">
-      {/* Header / Toggle */}
       <div className="flex items-center justify-between bg-black/40 p-3 rounded border border-cyber-border">
         <div className="flex items-center gap-2">
           <ShieldCheck className={`w-5 h-5 ${isGasless ? "text-neon-pink" : "text-cyber-muted"}`} />
@@ -142,7 +128,6 @@ export function CheckoutWidget() {
         </button>
       </div>
 
-      {/* Summary */}
       <div className="space-y-4 border-t border-cyber-border/50 py-4">
         <div className="flex items-center justify-between">
             <span className="text-cyber-muted text-sm">Quantity</span>
@@ -158,7 +143,6 @@ export function CheckoutWidget() {
         </div>
       </div>
 
-      {/* Action Button */}
       <button
         onClick={handleAction}
         disabled={isProcessing}
@@ -177,13 +161,11 @@ export function CheckoutWidget() {
         )}
       </button>
 
-      {/* Footer / Debug Reset */}
       {isConnected && wallet && (
         <div className="flex flex-col items-center gap-2">
             <div className="text-center text-[10px] text-cyber-muted font-mono">
                 Connected: <span className="text-neon-blue">{wallet.smartWallet.slice(0, 6)}...</span>
             </div>
-            {/* Fail-safe button to clear session if stuck */}
             <button 
                 onClick={() => { localStorage.clear(); window.location.reload(); }}
                 className="flex items-center gap-1 text-[9px] text-neon-red opacity-50 hover:opacity-100"
