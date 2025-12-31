@@ -40,3 +40,51 @@ const signature = await signAndSendTransaction(payload);
 ## 3. Limits & Best Practices
 * **Byte Limit:** Sponsored transactions are slightly larger due to the extra signature. Keep your instructions atomic (under 1232 bytes).
 * **Devnet vs Mainnet:** The Kora devnet paymaster is open. For Mainnet, you will need an API Key from the LazorKit team.
+
+
+
+
+
+----
+
+
+
+
+# ⛽ How to Setup Gasless Transactions
+
+LazorPay demonstrates how to eliminate gas fees for your users using the **Kora Paymaster**.
+
+## 1. Configuration
+In your `LazorkitProvider`, simply providing the `configPaymaster` prop enables sponsorship globally.
+
+```typescript
+configPaymaster={{
+  paymasterUrl: "[https://kora.devnet.lazorkit.com](https://kora.devnet.lazorkit.com)", 
+}}
+```
+
+## 2. Sending a Transaction
+When you send a transaction, the SDK automatically routes it through the Relayer if the Paymaster is configured.
+
+```typescript
+const { signAndSendTransaction } = useWallet();
+
+const handleTx = async () => {
+  const payload = {
+    instructions: [/* your instructions */],
+    transactionOptions: {
+      clusterSimulation: "devnet"
+    }
+  };
+
+  // 1. SDK sends TX to Kora Paymaster
+  // 2. Paymaster verifies and signs as "Fee Payer"
+  // 3. User approves with Biometrics
+  const signature = await signAndSendTransaction(payload);
+};
+```
+
+## 3. Limits & Best Practices
+* **Atomic Transactions:** Keep your instruction size small (under 1232 bytes). Sponsored transactions are slightly larger due to the extra signature.
+* **Devnet vs Mainnet:** The URL above is for Devnet. For Mainnet, you will need an API Key from the LazorKit team.
+
