@@ -9,29 +9,30 @@
     --border: 0 0% 15%;
   }
 
-  /* Standard CSS Reset */
+  /* FIX: Ensure borders are hidden by default to remove "Grid Lines" */
   * {
     border-color: hsl(var(--border));
+    border-width: 0;
     border-style: solid;
   }
   
   body {
-    background-color: #050505; /* Pure Black Void */
+    background-color: #050505; /* Pure Black Void - NO GRID IMAGE */
     color: white;
     font-family: 'Inter', sans-serif;
     min-height: 100vh;
     overflow-x: hidden;
-    /* GRID LINES REMOVED COMPLETELY */
   }
 }
 
 @layer components {
-  /* --- 1. GLASS SYSTEM (Kept for Header/Modals only) --- */
+  /* --- 1. GLASS SYSTEM --- */
   .glass {
     background-color: rgba(255, 255, 255, 0.05);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.1);
+    border-width: 1px; /* Explicitly set border width for glass components */
   }
   
   .glass-strong {
@@ -39,9 +40,10 @@
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
     border: 1px solid rgba(255, 255, 255, 0.2);
+    border-width: 1px;
   }
 
-  /* --- 2. HERO INPUTS (For Send/Swap) --- */
+  /* --- 2. HERO INPUTS --- */
   .input-hero {
     width: 100%;
     background: transparent;
@@ -52,11 +54,10 @@
     text-align: center;
     transition: all 0.3s ease;
   }
-  
   .input-hero::placeholder { color: rgba(255, 255, 255, 0.1); }
   .input-hero:focus { color: #22D3EE; filter: drop-shadow(0 0 10px rgba(34, 211, 238, 0.5)); }
 
-  /* --- 3. BUTTONS (Green Primary maintained) --- */
+  /* --- 3. BUTTONS --- */
   .btn-primary {
     position: relative;
     overflow: hidden;
@@ -64,7 +65,7 @@
     color: white;
     font-weight: 600;
     padding: 0.75rem 1.5rem;
-    border-radius: 9999px; /* Fully rounded */
+    border-radius: 9999px;
     transition: all 0.3s;
   }
   .btn-primary:hover {
@@ -72,10 +73,11 @@
     box-shadow: 0 0 30px rgba(16, 185, 129, 0.5);
   }
 
-  /* --- 4. 3D CARDS (For Store) --- */
+  /* --- 4. 3D CARDS --- */
   .card-3d {
     position: relative;
     border: 1px solid rgba(255, 255, 255, 0.1);
+    border-width: 1px;
     background-color: rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(12px);
     border-radius: 1.5rem;
@@ -99,7 +101,7 @@
 
 @layer utilities {
   .text-glow { text-shadow: 0 0 20px rgba(255, 255, 255, 0.5); }
-
+  
   /* Custom Scrollbar */
   .scrollbar-custom::-webkit-scrollbar { width: 6px; height: 6px; }
   .scrollbar-custom::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
