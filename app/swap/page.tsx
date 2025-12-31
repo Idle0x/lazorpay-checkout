@@ -1,151 +1,189 @@
 "use client";
 
-import React, { useState } from "react";
-import { ArrowDown, Settings, Info, RefreshCw, Wallet } from "lucide-react";
-import { CyberCard } from "@/components/ui/CyberCard";
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import { 
+  ArrowDownUp, 
+  Settings, 
+  RefreshCcw, 
+  Zap, 
+  Code2,
+  Wallet,
+  CheckCircle,
+  Loader2
+} from "lucide-react";
 import { useWallet } from "@lazorkit/wallet";
 import { useLazorContext } from "@/components/Lazorkit/LazorProvider";
-import { useConsole } from "@/components/ui/DevConsole";
-import { SystemProgram, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
-import { APP_CONFIG } from "@/lib/constants";
 
 export default function SwapPage() {
-  const { connect, signAndSendTransaction } = useWallet();
-  const { isConnected, wallet, refreshSession, saveSession } = useLazorContext();
-  const { addLog } = useConsole(); // We'll re-use the console for logs!
+  const [amount, setAmount] = useState("");
+  const [quote, setQuote] = useState("");
+  const [isSwapping, setIsSwapping] = useState(false); // UI state for the flip animation
+  const [processing, setProcessing] = useState(false);
+  const [success, setSuccess] = useState(false);
+  
+  // Token State
+  const [fromToken, setFromToken] = useState({ sym: "SOL", color: "text-cyan-400" });
+  const [toToken, setToToken] = useState({ sym: "USDC", color: "text-purple-400" });
 
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [amount, setAmount] = useState("1.0");
+  const { connect } = useWallet();
+  const { isConnected } = useLazorContext();
 
-  const handleSwap = async () => {
-    setIsProcessing(true);
+  // Simulate Live Quoting
+  useEffect(() => {
+    if (!amount) {
+      setQuote("");
+      return;
+    }
+    // Simulate calculation delay
+    const timer = setTimeout(() => {
+      const val = parseFloat(amount) * 145.20; // Fake SOL price
+      setQuote(val.toFixed(2));
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [amount]);
+
+  const handleFlip = () => {
+    setIsSwapping(true);
+    setTimeout(() => {
+      // Swap Logic
+      setFromToken(toToken);
+      setToToken(fromToken);
+      setAmount(quote);
+      setIsSwapping(false);
+    }, 300);
+  };
+
+  const executeSwap = async () => {
+    setProcessing(true);
     try {
-      if (!isConnected) {
-        addLog("[AUTH] Requesting Access...", "info");
-        const data = await connect();
-        if (data?.smartWallet) {
-           saveSession({ ...data, passkeyPubkey: "", walletDevice: "web" });
-           addLog("[SUCCESS] Connected for Swap", "success");
-        }
-      } else {
-        if (!wallet) return;
-        addLog(`[SWAP] Swapping ${amount} SOL for USDC...`, "info");
-        
-        // MOCK: In a real app, this would be a Jupiter Swap Instruction
-        // For the DEMO, we send a self-transfer with a memo to simulate activity
-        const ix = SystemProgram.transfer({
-            fromPubkey: new PublicKey(wallet.smartWallet),
-            toPubkey: new PublicKey(wallet.smartWallet), // Self-transfer (safe mock)
-            lamports: 0, 
-        });
-
-        addLog("[PAYMASTER] Gas Fees Sponsored by Protocol", "success");
-        
-        const payload = {
-            instructions: [ix],
-            transactionOptions: { clusterSimulation: "devnet" as const }
-        };
-
-        const sig = await signAndSendTransaction(payload);
-        addLog(`[CHAIN] Swap Confirmed! TX: ${sig.slice(0,8)}...`, "success");
-        setIsProcessing(false);
-        alert("Swap Successful! (Demo Transaction)");
-      }
-    } catch (e: any) {
-        console.error(e);
-        addLog(`[ERROR] ${e.message}`, "error");
-        setIsProcessing(false);
+      if (!isConnected) await connect();
+      await new Promise(r => setTimeout(r, 2000));
+      setSuccess(true);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setProcessing(false);
     }
   };
 
   return (
-    <div className="max-w-md mx-auto py-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="min-h-screen py-20 px-4 flex flex-col items-center justify-center relative overflow-hidden">
       
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4 px-2">
-        <h2 className="text-xl font-bold text-white">Swap</h2>
-        <div className="flex gap-2 text-cyber-muted">
-            <RefreshCw className="w-4 h-4 hover:text-white cursor-pointer" />
-            <Settings className="w-4 h-4 hover:text-white cursor-pointer" />
+      {/* 1. HEADER */}
+      <div className="text-center space-y-4 mb-16 relative z-10">
+        <div className="inline-flex items-center gap-2 text-zinc-500 text-sm font-bold font-mono uppercase tracking-widest">
+          <Link href="/" className="hover:text-white transition-colors">HUB</Link> / DEFI SWAP
         </div>
+        <h1 className="text-5xl md:text-7xl font-black text-white tracking-tighter flex items-center gap-4 justify-center">
+          ATOMIC SWAP <Zap className="w-12 h-12 text-yellow-400 fill-yellow-400 animate-pulse" />
+        </h1>
       </div>
 
-      <CyberCard className="space-y-1 relative overflow-visible">
+      {/* 2. THE REACTOR (Main Interface) */}
+      <div className="relative w-full max-w-xl">
         
-        {/* INPUT: From */}
-        <div className="bg-black/50 p-4 rounded-xl border border-white/5 hover:border-white/10 transition-colors">
-            <div className="flex justify-between mb-2">
-                <span className="text-xs text-cyber-muted font-mono">Paying</span>
-                <span className="text-xs text-cyber-muted font-mono flex items-center gap-1">
-                    <Wallet className="w-3 h-3" /> {isConnected ? "4.20 SOL" : "--"}
-                </span>
-            </div>
-            <div className="flex items-center justify-between">
-                <input 
-                    type="number" 
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    className="bg-transparent text-3xl font-bold text-white placeholder-white/20 outline-none w-1/2"
-                />
-                <div className="flex items-center gap-2 bg-black px-3 py-1.5 rounded-full border border-white/10">
-                    <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-blue-500" />
-                    <span className="font-bold text-sm">SOL</span>
-                </div>
-            </div>
-            <div className="text-xs text-cyber-muted mt-2">≈ $145.20 USD</div>
+        {/* Tech Reveal Sidebar (Desktop) */}
+        <div className="hidden xl:block absolute -right-72 top-20 w-64 animate-in fade-in slide-in-from-left duration-700 delay-200">
+           <div className="glass p-6 rounded-2xl border-l-4 border-emerald-500">
+              <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold mb-2 uppercase tracking-wider">
+                 JIT Liquidity <Code2 className="w-3 h-3" />
+              </div>
+              <pre className="text-[10px] font-mono text-zinc-400">
+{`// 1 Signature, 2 Transfers
+const ix = await jupiter.swap({
+  route: bestRoute,
+  userPublicKey: wallet.key
+});`}
+              </pre>
+           </div>
         </div>
 
-        {/* ARROW */}
-        <div className="relative h-2 z-10">
-            <div className="absolute left-1/2 -translate-x-1/2 -top-4 w-8 h-8 bg-cyber-gray border-4 border-black rounded-full flex items-center justify-center">
-                <ArrowDown className="w-4 h-4 text-cyber-muted" />
-            </div>
-        </div>
+        {/* Success Overlay */}
+        {success ? (
+           <div className="glass-strong rounded-[3rem] p-12 min-h-[500px] flex flex-col items-center justify-center text-center animate-in zoom-in duration-300">
+              <div className="w-24 h-24 rounded-full bg-emerald-500/20 flex items-center justify-center mb-6 border border-emerald-500/50 shadow-[0_0_40px_rgba(16,185,129,0.4)]">
+                 <CheckCircle className="w-12 h-12 text-emerald-400" />
+              </div>
+              <h2 className="text-4xl font-black text-white mb-2">SWAP COMPLETE</h2>
+              <p className="text-zinc-400 text-lg mb-8">
+                 Exchanged <span className="text-white font-bold">{amount} {fromToken.sym}</span> for <span className="text-white font-bold">{quote} {toToken.sym}</span>
+              </p>
+              <button 
+                onClick={() => { setSuccess(false); setAmount(""); }}
+                className="btn-zinc"
+              >
+                New Trade
+              </button>
+           </div>
+        ) : (
+           <div className="relative space-y-4">
+              
+              {/* TOP CONTAINER (FROM) */}
+              <div className={`glass-strong rounded-[2.5rem] p-8 transition-all duration-500 transform ${isSwapping ? 'translate-y-40 opacity-50 scale-90' : 'translate-y-0 opacity-100'}`}>
+                 <div className="flex justify-between items-center mb-4">
+                    <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Selling</span>
+                    <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Balance: 4.20</span>
+                 </div>
+                 
+                 <div className="flex items-center justify-between gap-4">
+                    <input 
+                       type="number"
+                       value={amount}
+                       onChange={(e) => setAmount(e.target.value)}
+                       placeholder="0.00"
+                       className="w-full bg-transparent text-6xl font-black text-white outline-none placeholder-zinc-700"
+                    />
+                    <div className={`text-4xl font-black ${fromToken.color} px-4 py-2 rounded-xl bg-white/5 border border-white/10`}>
+                       {fromToken.sym}
+                    </div>
+                 </div>
+              </div>
 
-        {/* OUTPUT: To */}
-        <div className="bg-black/50 p-4 rounded-xl border border-white/5 hover:border-white/10 transition-colors">
-            <div className="flex justify-between mb-2">
-                <span className="text-xs text-cyber-muted font-mono">Receiving</span>
-            </div>
-            <div className="flex items-center justify-between">
-                <div className="text-3xl font-bold text-white">{(parseFloat(amount || "0") * 145.2).toFixed(2)}</div>
-                <div className="flex items-center gap-2 bg-black px-3 py-1.5 rounded-full border border-white/10">
-                    <div className="w-5 h-5 rounded-full bg-blue-400" />
-                    <span className="font-bold text-sm">USDC</span>
-                </div>
-            </div>
-            <div className="text-xs text-cyber-muted mt-2">1 SOL ≈ 145.20 USDC</div>
-        </div>
+              {/* LIGHTNING SWITCH BUTTON */}
+              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
+                 <button 
+                    onClick={handleFlip}
+                    className="w-16 h-16 rounded-full bg-black border-4 border-zinc-800 flex items-center justify-center hover:scale-110 hover:border-cyan-400 transition-all duration-300 shadow-xl group"
+                 >
+                    <ArrowDownUp className="w-6 h-6 text-white group-hover:rotate-180 transition-transform duration-500" />
+                 </button>
+              </div>
 
-        {/* INFO: The Gasless Flex */}
-        <div className="mt-4 bg-neon-green/5 border border-neon-green/20 rounded-lg p-3 flex items-start gap-3">
-            <Info className="w-4 h-4 text-neon-green shrink-0 mt-0.5" />
-            <div className="space-y-1">
-                <div className="flex justify-between text-xs">
-                    <span className="text-cyber-muted">Network Cost</span>
-                    <span className="text-cyber-muted line-through">$0.002</span>
-                </div>
-                <div className="flex justify-between text-xs font-bold">
-                    <span className="text-neon-green">LazorPay Sponsor</span>
-                    <span className="text-neon-green">FREE</span>
-                </div>
-            </div>
-        </div>
+              {/* BOTTOM CONTAINER (TO) */}
+              <div className={`glass-strong rounded-[2.5rem] p-8 bg-black/40 transition-all duration-500 transform ${isSwapping ? '-translate-y-40 opacity-50 scale-90' : 'translate-y-0 opacity-100'}`}>
+                 <div className="flex justify-between items-center mb-4">
+                    <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Buying</span>
+                    {amount && <span className="text-xs font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-1"><Zap className="w-3 h-3" /> Best Price</span>}
+                 </div>
+                 
+                 <div className="flex items-center justify-between gap-4">
+                    <div className="w-full text-6xl font-black text-zinc-300 truncate">
+                       {quote || "0.00"}
+                    </div>
+                    <div className={`text-4xl font-black ${toToken.color} px-4 py-2 rounded-xl bg-white/5 border border-white/10`}>
+                       {toToken.sym}
+                    </div>
+                 </div>
+              </div>
 
-        {/* ACTION BUTTON */}
-        <button
-            onClick={handleSwap}
-            disabled={isProcessing}
-            className={`w-full mt-4 py-4 rounded-xl font-bold text-lg transition-all ${
-                isProcessing 
-                ? "bg-cyber-gray text-cyber-muted" 
-                : "bg-neon-green text-black hover:bg-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.3)]"
-            }`}
-        >
-            {isProcessing ? "Confirming..." : isConnected ? "Confirm Swap" : "Connect Wallet"}
-        </button>
+              {/* ACTION BUTTON */}
+              <button 
+                 onClick={executeSwap}
+                 disabled={processing}
+                 className="w-full py-6 mt-4 rounded-3xl bg-white text-black text-2xl font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-lg flex items-center justify-center gap-3"
+              >
+                 {processing ? (
+                    <><Loader2 className="w-8 h-8 animate-spin" /> CONFIRMING</>
+                 ) : (
+                    <>{isConnected ? "SWAP ASSETS" : "CONNECT WALLET"}</>
+                 )}
+              </button>
 
-      </CyberCard>
+           </div>
+        )}
+
+      </div>
     </div>
   );
 }
