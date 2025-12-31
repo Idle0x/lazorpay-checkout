@@ -12,32 +12,12 @@ const config: Config = {
         border: "hsl(var(--border))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
-        // The "Zinc Blue" Palette
-        zinc: {
-          900: "#18181B",
-          800: "#27272A",
-          500: "#71717A",
-        },
-        cyan: {
-          400: "#22D3EE",
-          500: "#06B6D4",
-        },
-        primary: {
-          DEFAULT: "hsl(var(--primary))",
-          foreground: "hsl(var(--primary-foreground))",
-        },
-        secondary: {
-          DEFAULT: "hsl(var(--secondary))",
-          foreground: "hsl(var(--secondary-foreground))",
-        },
-        muted: {
-          DEFAULT: "hsl(var(--muted))",
-          foreground: "hsl(var(--muted-foreground))",
-        },
-        accent: {
-          DEFAULT: "hsl(var(--accent))",
-          foreground: "hsl(var(--accent-foreground))",
-        },
+        // Zinc Blue Palette
+        zinc: { 900: "#18181B", 800: "#27272A", 500: "#71717A" },
+        cyan: { 400: "#22D3EE", 500: "#06B6D4" },
+        // Legacy Support
+        "neon-green": "#10B981",
+        "neon-blue": "#3B82F6",
       },
       animation: {
         "float": "float 6s ease-in-out infinite",
@@ -67,6 +47,7 @@ const config: Config = {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  // Ensure we don't crash if plugin is missing, but try to use it
+  plugins: [], 
 };
 export default config;
