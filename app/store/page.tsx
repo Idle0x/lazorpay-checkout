@@ -1,203 +1,245 @@
 "use client";
 
 import React, { useState } from "react";
-import { CheckoutWidget } from "@/components/ui/CheckoutWidget";
+import Link from "next/link";
 import { 
-  Package, 
-  Star, 
-  ShieldCheck, 
   Zap, 
-  TrendingUp, 
-  Users, 
-  CheckCircle,
-  Cpu
+  Cpu, 
+  Ticket, 
+  X, 
+  CheckCircle, 
+  Loader2,
+  Code2,
+  Fingerprint
 } from "lucide-react";
+import { useWallet } from "@lazorkit/wallet";
+import { useLazorContext } from "@/components/Lazorkit/LazorProvider";
+import { SystemProgram, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { APP_CONFIG } from "@/lib/constants";
+
+// --- TYPES ---
+type Product = {
+  id: number;
+  name: string;
+  price: number;
+  type: "hardware" | "digital" | "ticket";
+  color: string;
+  icon: any;
+  techSpec: string;
+};
+
+// --- DATA ---
+const PRODUCTS: Product[] = [
+  {
+    id: 1,
+    name: "NEURAL LINK V2",
+    price: 0.5,
+    type: "hardware",
+    color: "bg-zinc-900 border-zinc-700 text-white", // The Black Card
+    icon: Cpu,
+    techSpec: "IOT_DEVICE_SIGNATURE"
+  },
+  {
+    id: 2,
+    name: "DEV CREDITS",
+    price: 1.0,
+    type: "digital",
+    color: "bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white", // The Neon Card
+    icon: Zap,
+    techSpec: "SPL_TOKEN_TRANSFER"
+  },
+  {
+    id: 3,
+    name: "BREAKPOINT VIP",
+    price: 2.5,
+    type: "ticket",
+    color: "bg-[#e5e5e5] text-black border-dashed border-4 border-zinc-400", // The Ticket
+    icon: Ticket,
+    techSpec: "COMPRESSED_NFT_MINT"
+  }
+];
 
 export default function StorePage() {
-  const [selectedImage, setSelectedImage] = useState(0);
-  
-  const productImages = [
-    { id: 0, color: "from-emerald-500 to-emerald-600", icon: Zap },
-    { id: 1, color: "from-blue-500 to-blue-600", icon: Cpu },
-    { id: 2, color: "from-purple-500 to-purple-600", icon: ShieldCheck }
-  ];
+  const [activeId, setActiveId] = useState<number | null>(null);
+  const [processing, setProcessing] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const { connect, signAndSendTransaction } = useWallet();
+  const { isConnected, wallet } = useLazorContext();
 
-  const features = [
-    { icon: Zap, text: "Instant Delivery" },
-    { icon: ShieldCheck, text: "Lifetime Warranty" },
-    { icon: Package, text: "Free Shipping" },
-    { icon: TrendingUp, text: "24/7 Support" }
-  ];
+  // --- ACTIONS ---
+  const handlePurchase = async (product: Product) => {
+    setProcessing(true);
+    try {
+      if (!isConnected) {
+        await connect();
+        // Visual delay for effect
+        await new Promise(r => setTimeout(r, 1000));
+      }
+      
+      // Simulate Transaction
+      if (wallet) {
+         const ix = SystemProgram.transfer({
+            fromPubkey: new PublicKey(wallet.smartWallet),
+            toPubkey: new PublicKey(APP_CONFIG.MERCHANT_ADDRESS),
+            lamports: Math.floor(product.price * LAMPORTS_PER_SOL),
+        });
+        
+        // In a real app, we would send this. 
+        // For the showcase, we simulate the "Signature" delay.
+        await new Promise(r => setTimeout(r, 2000)); 
+        
+        setSuccess(true);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setProcessing(false);
+    }
+  };
 
-  const reviews = [
-    { name: "Alex Chen", rating: 5, text: "The zero-latency transmission is mind blowing." },
-    { name: "Sarah Kim", rating: 5, text: "Finally, a BCI that actually works. Worth every penny." }
-  ];
+  const closeActive = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setActiveId(null);
+    setSuccess(false);
+  };
 
   return (
-    <div className="min-h-screen py-12">
-      <div className="max-w-7xl mx-auto px-4">
+    <div className="min-h-screen py-12 px-4 relative overflow-hidden flex flex-col items-center justify-center">
+      
+      {/* 1. HEADER (Fades out when active) */}
+      <div className={`text-center space-y-4 mb-12 transition-opacity duration-500 ${activeId ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+        <div className="inline-flex items-center gap-2 text-zinc-500 text-xs font-mono uppercase tracking-widest">
+          <Link href="/" className="hover:text-white transition-colors">HUB</Link> / STORE
+        </div>
+        <h1 className="text-5xl md:text-7xl font-black text-white tracking-tighter">
+          ARTIFACTS
+        </h1>
+      </div>
+
+      {/* 2. THE STAGE (Container for cards) */}
+      <div className="relative w-full max-w-6xl h-[60vh] flex items-center justify-center perspective-[1000px]">
         
-        {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-xs font-mono text-white/40 mb-8 animate-in fade-in slide-in-from-left duration-500">
-          <span className="hover:text-white cursor-pointer transition-colors">HUB</span>
-          <span>/</span>
-          <span className="text-white">STORE</span>
-        </div>
+        {PRODUCTS.map((product) => {
+          const isActive = activeId === product.id;
+          const isBlurred = activeId !== null && !isActive;
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
-          
-          {/* Left: Product Visuals */}
-          <div className="space-y-8 animate-in fade-in slide-in-from-left duration-700">
-            
-            {/* Main Image Stage */}
-            <div className="relative aspect-square rounded-[2rem] overflow-hidden glass-strong group border-white/10">
-              
-              {/* Dynamic Gradient Background */}
-              <div className={`absolute inset-0 bg-gradient-to-br ${productImages[selectedImage].color} opacity-20 transition-all duration-700`} />
-              
-              {/* Floating Effects */}
-              <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-white/10 rounded-full blur-3xl animate-float" />
-              <div className="absolute bottom-1/4 right-1/4 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }} />
-              
-              {/* Product Hero Icon */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-white/20 blur-3xl rounded-full animate-pulse-glow" />
-                  <Zap className="relative w-48 h-48 text-white drop-shadow-[0_0_50px_rgba(255,255,255,0.3)] transform transition-transform duration-500 group-hover:scale-110" />
+          return (
+            <div
+              key={product.id}
+              onClick={() => setActiveId(product.id)}
+              className={`
+                absolute transition-all duration-700 ease-[cubic-bezier(0.25,0.8,0.25,1)]
+                ${isActive 
+                  ? 'z-50 w-[90vw] md:w-[600px] h-[70vh] cursor-default rotate-0' 
+                  : `w-64 h-96 cursor-pointer hover:scale-105 hover:-translate-y-4 ${isBlurred ? 'opacity-0 scale-50 blur-xl pointer-events-none' : 'opacity-100'}`
+                }
+                ${product.id === 1 && !isActive ? '-translate-x-64 rotate-y-12' : ''}
+                ${product.id === 2 && !isActive ? 'z-10 translate-z-10' : ''}
+                ${product.id === 3 && !isActive ? 'translate-x-64 -rotate-y-12' : ''}
+              `}
+              style={{ transformStyle: 'preserve-3d' }}
+            >
+              {/* THE CARD ITSELF */}
+              <div className={`w-full h-full rounded-3xl p-8 flex flex-col justify-between overflow-hidden relative shadow-2xl ${product.color}`}>
+                
+                {/* Close Button (Only visible when active) */}
+                {isActive && (
+                  <button 
+                    onClick={closeActive}
+                    className="absolute top-6 right-6 p-2 rounded-full bg-black/10 hover:bg-black/20 transition-colors z-20"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                )}
+
+                {/* Card Top: Icon & Title */}
+                <div className="space-y-4 z-10">
+                  <product.icon className={`w-12 h-12 ${product.id === 3 ? 'text-black' : 'text-white'}`} />
+                  <h2 className={`text-4xl font-black leading-none ${product.id === 3 ? 'text-black' : 'text-white'}`}>
+                    {product.name}
+                  </h2>
+                  {isActive && (
+                    <p className={`text-lg font-medium ${product.id === 3 ? 'text-black/60' : 'text-white/60'}`}>
+                       Experience the future of commerce. Zero latency settlement via LazorKit.
+                    </p>
+                  )}
                 </div>
-              </div>
 
-              {/* Status Badges */}
-              <div className="absolute top-6 left-6 flex flex-col gap-2">
-                <div className="glass px-3 py-1.5 rounded-full text-[10px] font-bold tracking-wider text-emerald-400 flex items-center gap-1.5 backdrop-blur-xl border-emerald-500/20">
-                  <Star className="w-3 h-3 fill-emerald-400" />
-                  BESTSELLER
-                </div>
-              </div>
-            </div>
-
-            {/* Thumbnail Gallery */}
-            <div className="grid grid-cols-3 gap-4">
-              {productImages.map((img) => (
-                <button
-                  key={img.id}
-                  onClick={() => setSelectedImage(img.id)}
-                  className={`relative aspect-square rounded-2xl overflow-hidden transition-all duration-300 ${
-                    selectedImage === img.id 
-                      ? 'ring-2 ring-emerald-500 scale-95' 
-                      : 'glass hover:bg-white/5'
-                  }`}
-                >
-                  <div className={`absolute inset-0 bg-gradient-to-br ${img.color} opacity-20`} />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <img.icon className="w-8 h-8 text-white/80" />
+                {/* Card Center: Tech Spec (Only idle) */}
+                {!isActive && (
+                  <div className={`text-xs font-mono tracking-widest opacity-50 absolute bottom-8 left-8`}>
+                    // {product.techSpec}
                   </div>
-                </button>
-              ))}
-            </div>
+                )}
 
-            {/* Feature Pills */}
-            <div className="grid grid-cols-2 gap-3">
-              {features.map((feature, i) => (
-                <div 
-                  key={i}
-                  className="glass rounded-xl p-4 flex items-center gap-3 hover:bg-white/5 transition-colors"
-                >
-                  <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
-                    <feature.icon className="w-4 h-4 text-emerald-400" />
-                  </div>
-                  <p className="text-xs text-white/80 font-bold uppercase tracking-wide">{feature.text}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Right: Details & Checkout */}
-          <div className="space-y-10 animate-in fade-in slide-in-from-right duration-700 delay-200">
-            
-            {/* Header Info */}
-            <div className="space-y-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight mb-2">
-                    Neural Link <span className="text-emerald-400">v2.0</span>
-                  </h1>
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-0.5">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <Star key={star} className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />
-                      ))}
+                {/* Card Bottom: Active Interface */}
+                {isActive && (
+                  <div className="space-y-6 z-10 animate-in fade-in slide-in-from-bottom duration-500">
+                    
+                    {/* Price Display */}
+                    <div className="flex items-baseline gap-2">
+                       <span className={`text-6xl font-black ${product.id === 3 ? 'text-black' : 'text-white'}`}>{product.price}</span>
+                       <span className={`text-xl font-bold ${product.id === 3 ? 'text-black/50' : 'text-white/50'}`}>SOL</span>
                     </div>
-                    <span className="text-sm text-white/40 font-mono">284 VERIFIED REVIEWS</span>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-3xl font-bold text-white">0.05 SOL</div>
-                  <div className="text-xs text-emerald-400 font-bold tracking-wide">IN STOCK</div>
-                </div>
-              </div>
 
-              <p className="text-lg text-white/60 leading-relaxed font-light">
-                Experience zero-latency thought transmission. Now featuring enhanced bandwidth and 
-                seamless integration with Solana Pay for instant, gasless settlement.
-              </p>
+                    {/* Massive Action Button */}
+                    <div className="relative group">
+                       <button
+                         onClick={(e) => { e.stopPropagation(); handlePurchase(product); }}
+                         disabled={processing || success}
+                         className={`w-full py-6 rounded-2xl text-2xl font-black uppercase tracking-widest transition-all
+                           ${success 
+                             ? 'bg-emerald-500 text-white' 
+                             : product.id === 3 ? 'bg-black text-white hover:scale-105' : 'bg-white text-black hover:scale-105'
+                           }
+                         `}
+                       >
+                         {processing ? (
+                           <Loader2 className="w-8 h-8 animate-spin mx-auto" />
+                         ) : success ? (
+                           <div className="flex items-center justify-center gap-2">
+                             <CheckCircle className="w-8 h-8" /> CONFIRMED
+                           </div>
+                         ) : (
+                           <div className="flex items-center justify-center gap-3">
+                             <Fingerprint className="w-8 h-8" />
+                             {isConnected ? "CONFIRM" : "CONNECT"}
+                           </div>
+                         )}
+                       </button>
 
-              {/* Specs Box */}
-              <div className="glass rounded-2xl p-6 space-y-4 border-l-4 border-l-emerald-500">
-                <h3 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
-                  <Cpu className="w-4 h-4 text-emerald-400" />
-                  Technical Specifications
-                </h3>
-                <div className="space-y-2">
-                  {[
-                    'Brain-Computer Interface (BCI) v2.0',
-                    'Latency: < 4ms (neural-to-cloud)',
-                    '24h Battery Life (Wireless Charging)',
-                    'Solana Pay Native Integration'
-                  ].map((item, i) => (
-                    <div key={i} className="flex items-center gap-3 text-sm text-white/80">
-                      <div className="w-1 h-1 rounded-full bg-emerald-400" />
-                      {item}
+                       {/* Tech Reveal (Floating Side Panel) */}
+                       <div className="absolute left-full top-0 ml-6 w-64 hidden xl:block">
+                          <div className="glass p-4 rounded-xl border-l-4 border-emerald-500 text-left">
+                            <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold mb-2 uppercase tracking-wider">
+                              <Code2 className="w-3 h-3" /> LazorKit Logic
+                            </div>
+                            <div className="space-y-2 text-[10px] font-mono text-white/70">
+                               <p className="text-white">{'// 1. Session Check'}</p>
+                               <p>if (activeSession) skipPopup()</p>
+                               <p className="text-white mt-2">{'// 2. Instant Sign'}</p>
+                               <p>await signTransaction(ix)</p>
+                            </div>
+                          </div>
+                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-            </div>
 
-            {/* CHECKOUT WIDGET INJECTION */}
-            <div className="relative">
-              {/* Decorative glow behind widget */}
-              <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500/20 to-blue-500/20 rounded-[2rem] blur-xl opacity-50" />
-              <div className="relative">
-                <CheckoutWidget />
-              </div>
-            </div>
-
-            {/* Reviews Preview */}
-            <div className="space-y-4 border-t border-white/10 pt-8">
-              <div className="flex items-center gap-2 mb-2">
-                <Users className="w-4 h-4 text-emerald-400" />
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider">Recent Feedback</h3>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {reviews.map((review, i) => (
-                  <div key={i} className="glass rounded-xl p-4 hover:bg-white/5 transition-colors">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-bold text-white">{review.name}</span>
-                      <div className="flex gap-0.5">
-                        {[...Array(review.rating)].map((_, j) => (
-                          <Star key={j} className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-                        ))}
-                      </div>
-                    </div>
-                    <p className="text-xs text-white/50 italic">"{review.text}"</p>
                   </div>
-                ))}
+                )}
+
+                {/* Ticket Perforation Effect (Only for ID 3) */}
+                {product.id === 3 && (
+                   <div className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-8 bg-[#050505] rounded-r-full" />
+                )}
+                {product.id === 3 && (
+                   <div className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-8 bg-[#050505] rounded-l-full" />
+                )}
+
               </div>
             </div>
-          </div>
-        </div>
+          );
+        })}
+
       </div>
     </div>
   );
