@@ -1,52 +1,90 @@
 "use client";
 
-import { ProductDisplay } from "@/components/ui/ProductDisplay";
-import { CheckoutWidget } from "@/components/ui/CheckoutWidget";
-import { useConsole } from "@/components/ui/DevConsole";
-import { Terminal } from "lucide-react";
+import Link from "next/link";
+import { ShoppingBag, ArrowLeftRight, Image as ImageIcon, CreditCard, ChevronRight } from "lucide-react";
 
-export default function Home() {
-  const { toggle, isOpen } = useConsole();
-
+// Module Card Component
+function ModuleCard({ title, desc, icon: Icon, href, color }: any) {
   return (
-    // CHANGE 1: min-h-screen with padding, allowing scroll (No overflow-hidden)
-    <main className="min-h-screen flex flex-col items-center justify-start py-12 px-4 relative bg-black">
+    <Link 
+      href={href}
+      className="group relative overflow-hidden bg-cyber-gray border border-white/5 hover:border-white/20 rounded-xl p-6 transition-all hover:-translate-y-1"
+    >
+      <div className={`absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity ${color}`}>
+        <Icon className="w-24 h-24" />
+      </div>
       
-      {/* Background Grid */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#18181b_1px,transparent_1px),linear-gradient(to_bottom,#18181b_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] fixed z-0" />
-
-      {/* CHANGE 2: Header is static, not absolute, so it pushes content down */}
-      <div className="relative z-10 w-full max-w-md flex flex-col items-center gap-6 mb-8">
-        
-        {/* Logo */}
-        <div className="text-center space-y-2">
-          <h1 className="text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-neon-blue">
-            LAZOR<span className="text-white">PAY</span>
-          </h1>
-          <p className="text-cyber-muted text-xs tracking-[0.3em] uppercase">
-            Secure • Invisible • Instant
-          </p>
+      <div className="relative z-10 flex flex-col h-full justify-between">
+        <div className="space-y-2">
+          <div className={`w-10 h-10 rounded-lg flex items-center justify-center bg-black/50 border border-white/10 ${color}`}>
+            <Icon className="w-5 h-5 text-white" />
+          </div>
+          <h3 className="text-xl font-bold text-white">{title}</h3>
+          <p className="text-sm text-cyber-muted leading-relaxed">{desc}</p>
         </div>
+        
+        <div className="flex items-center gap-2 text-xs font-mono mt-6 text-white/50 group-hover:text-white transition-colors">
+          OPEN MODULE <ChevronRight className="w-3 h-3" />
+        </div>
+      </div>
+    </Link>
+  );
+}
 
-        {/* Dev Toggle - Now part of the flow, not floating blindly */}
-        <button 
-            onClick={toggle}
-            className={`flex items-center gap-2 px-4 py-2 rounded-full border text-xs font-mono transition-all ${
-                isOpen 
-                ? "bg-neon-blue/20 border-neon-blue text-neon-blue shadow-[0_0_15px_rgba(59,130,246,0.5)]" 
-                : "bg-cyber-gray border-cyber-border text-cyber-muted hover:text-white"
-            }`}
-        >
-            <Terminal className="w-3 h-3" />
-            {isOpen ? "DEV_MODE: ACTIVE" : "ENABLE DEV_MODE"}
-        </button>
+export default function HubPage() {
+  return (
+    <div className="space-y-12 py-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Hero */}
+      <div className="text-center space-y-4 max-w-2xl mx-auto">
+        <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-white/50">
+          LAZOR<span className="text-neon-blue">PAY</span> HUB
+        </h1>
+        <p className="text-cyber-muted text-lg">
+          The ultimate checkout suite for Solana. <br/>
+          One passkey. Infinite possibilities.
+        </p>
       </div>
 
-      {/* CHANGE 3: Spaced out container */}
-      <div className="w-full max-w-md space-y-8 z-10 pb-20">
-        <ProductDisplay />
-        <CheckoutWidget />
+      {/* The Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        
+        {/* Module 1: Store */}
+        <ModuleCard 
+          title="Virtual Store"
+          desc="E-commerce checkout flow with cart simulation and instant settlement."
+          icon={ShoppingBag}
+          href="/store"
+          color="text-neon-green"
+        />
+
+        {/* Module 2: Swap (Coming Soon) */}
+        <ModuleCard 
+          title="DeFi Swap"
+          desc="Gasless token swaps. Trade SOL/USDC without holding SOL for fees."
+          icon={ArrowLeftRight}
+          href="/swap"
+          color="text-neon-pink"
+        />
+
+        {/* Module 3: Mint (Coming Soon) */}
+        <ModuleCard 
+          title="NFT Creator"
+          desc="Upload and mint compressed NFTs directly from your browser."
+          icon={ImageIcon}
+          href="/mint"
+          color="text-neon-blue"
+        />
+
+        {/* Module 4: Subscriptions (Coming Soon) */}
+        <ModuleCard 
+          title="Subscriptions"
+          desc="Recurring billing logic powered by smart wallet delegation."
+          icon={CreditCard}
+          href="/subs" // We'll build this later
+          color="text-yellow-400"
+        />
+
       </div>
-    </main>
+    </div>
   );
 }
