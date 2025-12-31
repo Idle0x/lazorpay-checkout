@@ -9,49 +9,71 @@ import {
   TrendingUp, 
   CreditCard,
   ArrowRight,
-  Fingerprint
+  Fingerprint,
+  Code2
 } from "lucide-react";
 import { useWallet } from "@lazorkit/wallet";
 import { useLazorContext } from "@/components/Lazorkit/LazorProvider";
 
 // --- COMPONENTS ---
 
-// 1. The "Platinum Pill" Module
-// Updated: Uses 'pill-platinum' class (White bg, Black text)
+// 1. The New "Stone & Sand" Pill Module
 function PillModule({ title, desc, icon: Icon, href, align, index }: any) {
   const isLeft = align === 'left';
+  // Logic: Even index = Stone Color, Odd index = Sand Color
+  const pillColor = index % 2 === 0 ? 'bg-[#dcdff0]' : 'bg-[#ccccb1]';
+  const hoverColor = index % 2 === 0 ? 'hover:bg-[#c4c7d9]' : 'hover:bg-[#b8b89f]';
   
   return (
     <div className={`flex w-full ${isLeft ? 'justify-start' : 'justify-end'}`}>
       <Link 
         href={href}
-        className="group relative w-full md:w-[70%] pill-platinum p-8 md:p-10 flex flex-col items-center justify-center text-center overflow-hidden"
+        className={`group relative w-full md:w-[70%] ${pillColor} ${hoverColor} rounded-full p-8 md:p-12 flex flex-col items-center justify-center text-center transition-all duration-500 hover:scale-[1.02] hover:-rotate-1 shadow-2xl`}
         style={{ animationDelay: `${index * 100}ms` }}
       >
-        <div className="relative z-10 space-y-3">
-          {/* Icon Badge - Dark Grey to contrast with Platinum */}
-          <div className="mx-auto w-14 h-14 rounded-full bg-zinc-900/10 flex items-center justify-center mb-2">
-            <Icon className="w-6 h-6 text-zinc-900 group-hover:scale-110 transition-transform" />
+        <div className="relative z-10 space-y-4">
+          {/* Icon Badge - Dark background for contrast */}
+          <div className="mx-auto w-16 h-16 rounded-full bg-black/5 border border-black/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
+            <Icon className="w-8 h-8 text-black" />
           </div>
 
-          {/* Typography - FORCED BLACK via CSS, but enforced here just in case */}
+          {/* Typography - BLACK TEXT */}
           <div>
-            <h3 className="text-3xl md:text-5xl font-black text-zinc-900 tracking-tighter mb-2">
+            <h3 className="text-4xl md:text-5xl font-black text-black tracking-tighter mb-2">
               {title}
             </h3>
-            <p className="text-base md:text-lg text-zinc-600 font-medium max-w-md mx-auto leading-relaxed">
+            <p className="text-lg text-black/60 max-w-md mx-auto leading-relaxed font-medium">
               {desc}
             </p>
           </div>
 
-          {/* Action Hint */}
-          <div className="pt-4 opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-2 group-hover:translate-y-0">
-            <div className="inline-flex items-center gap-2 text-zinc-900 text-xs font-bold tracking-[0.2em] uppercase">
-              Launch <ArrowRight className="w-4 h-4" />
+          {/* Action Hint - Dark Arrow */}
+          <div className="pt-6 opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-4 group-hover:translate-y-0">
+            <div className="inline-flex items-center gap-2 text-black text-sm font-bold tracking-[0.2em] uppercase">
+              Launch Module <ArrowRight className="w-4 h-4" />
             </div>
           </div>
         </div>
       </Link>
+    </div>
+  );
+}
+
+// 2. The Tech Reveal Code Snippet (Kept as requested)
+function TechReveal() {
+  return (
+    <div className="hidden md:block absolute right-[-20px] top-1/2 -translate-y-1/2 translate-x-full pl-8 opacity-0 group-hover:opacity-100 transition-all duration-500">
+      <div className="glass p-4 rounded-xl border-l-4 border-emerald-500">
+        <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold mb-2 uppercase tracking-wider">
+          <Code2 className="w-3 h-3" /> LazorKit SDK
+        </div>
+        <pre className="text-[10px] font-mono text-white/70">
+{`await connect({
+  passkey: true,
+  chain: "solana"
+});`}
+        </pre>
+      </div>
     </div>
   );
 }
@@ -79,65 +101,68 @@ export default function HubPage() {
   const modules = [
     {
       title: "Virtual Store",
-      desc: "E-commerce flow with floating 3D product cards.",
+      desc: "Interactive e-commerce showcase featuring one-click checkout.",
       icon: ShoppingBag,
       href: "/store"
     },
     {
       title: "DeFi Swap",
-      desc: "Atomic token swaps with zero-latency feedback.",
+      desc: "Atomic token swaps with zero-latency visual feedback.",
       icon: ArrowLeftRight,
       href: "/swap"
     },
     {
       title: "P2P Transfer",
-      desc: "Instant payments with social identity resolution.",
+      desc: "Instant payments with social-layer identity resolution.",
       icon: Send,
       href: "/send"
     },
     {
       title: "NFT Mint",
-      desc: "Holographic pedestal for compressed NFT minting.",
+      desc: "Drag-and-drop creation tool with compressed state compression.",
       icon: ImageIcon,
       href: "/mint"
     },
     {
       title: "Pro Trading",
-      desc: "Simplified terminal with instant buy/sell execution.",
+      desc: "High-frequency terminal interface with session key delegation.",
       icon: TrendingUp,
       href: "/trade"
     },
     {
       title: "Subscriptions",
-      desc: "Recurring billing authorization logic.",
+      desc: "Recurring billing authorization logic for SaaS models.",
       icon: CreditCard,
       href: "/subs"
     }
   ];
 
   return (
-    <div className="min-h-screen py-24 px-4 overflow-hidden relative bg-[#09090b]">
+    <div className="min-h-screen py-32 px-4 overflow-hidden relative">
       
-      <div className="max-w-5xl mx-auto space-y-24 relative z-10">
+      {/* 1. HERO HEADER (Unchanged Logic, just removed blue glows) */}
+      <div className="max-w-5xl mx-auto space-y-32 relative z-10">
         
-        {/* 1. HERO HEADER - Clean White Text on Dark Background */}
         <div className="text-center space-y-6 animate-in fade-in slide-in-from-top duration-1000">
-          <div className="inline-flex items-center gap-3 bg-white/5 border border-white/10 px-4 py-1.5 rounded-full">
-            <span className="w-2 h-2 rounded-full bg-white animate-pulse"></span>
-            <span className="text-[10px] font-bold tracking-[0.2em] text-white">V2.0 ONLINE</span>
+          <div className="inline-flex items-center gap-3 glass px-6 py-2 rounded-full border-white/10">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span className="text-xs font-bold tracking-[0.2em] text-white">V2.0 ONLINE</span>
           </div>
           
-          <h1 className="text-7xl md:text-9xl font-black text-white tracking-tighter leading-none">
-            LAZOR<span className="text-zinc-500">PAY</span>
+          <h1 className="text-7xl md:text-9xl font-black text-white tracking-tighter leading-none text-glow">
+            LAZOR<span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-[#dcdff0]">PAY</span>
           </h1>
           
-          <p className="text-xl text-zinc-400 font-light tracking-wide max-w-2xl mx-auto">
-            THE PLATINUM SUITE FOR SOLANA
+          <p className="text-xl text-white/50 font-light tracking-wide max-w-2xl mx-auto">
+            THE PRODUCTION SUITE FOR SOLANA
           </p>
         </div>
 
-        {/* 2. THE ZIG-ZAG MODULES (Platinum Pills) */}
-        <div className="space-y-8 md:space-y-12">
+        {/* 2. THE ZIG-ZAG MODULES (Now Stone & Sand) */}
+        <div className="space-y-12">
           {modules.map((mod, i) => (
             <PillModule 
               key={i}
@@ -148,19 +173,22 @@ export default function HubPage() {
           ))}
         </div>
 
-        {/* 3. THE REACTOR CORE (Clean White Button) */}
-        <div className="flex justify-center pt-16 pb-10">
+        {/* 3. THE REACTOR CORE (Green Connect Button - Unchanged) */}
+        <div className="flex justify-center pt-20 pb-10">
           <div className="relative group">
-            <div className="absolute -inset-1 bg-white/20 rounded-full blur opacity-40 group-hover:opacity-100 transition duration-500"></div>
+            <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full blur opacity-40 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
             
             <button 
               onClick={handleConnect}
               disabled={isConnected}
-              className="relative btn-primary flex items-center gap-4 hover:scale-105 transition-transform"
+              className="relative btn-primary px-12 py-6 text-2xl rounded-full flex items-center gap-4 hover:scale-105 transition-transform"
             >
-              <Fingerprint className="w-6 h-6" />
+              <Fingerprint className="w-8 h-8" />
               {isConnected ? "SESSION ACTIVE" : "CONNECT PASSKEY"}
             </button>
+
+            {/* Educational Hover Side-Panel */}
+            <TechReveal />
           </div>
         </div>
 
