@@ -1,39 +1,38 @@
-# ⚡ LazorPay Checkout
+# ⚡ LazorPay Hub
 
-> The "Invisible Wallet" experience for Solana.
-> A drop-in, production-ready checkout component powered by **LazorKit v2**.
+> **The Ultimate Checkout Suite for Solana.**
+> A production-ready reference implementation for Passkey Authentication and Gasless Transactions using LazorKit.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Status](https://img.shields.io/badge/status-live-green.svg)
 ![Stack](https://img.shields.io/badge/stack-Next.js_14-black.svg)
 
-## 🌟 The Concept
-LazorPay proves that crypto onboarding doesn't have to be painful. By integrating **LazorKit's Passkey SDK**, we turn a standard checkout flow into a 1-click biometric experience.
+## 🌟 The Vision
+LazorPay Hub isn't just a demo—it's a **product suite**. We re-imagined the Web3 onboarding experience to prove that crypto apps can feel as seamless as Web2 fintech.
 
 **No Seed Phrases. No Extensions. Just FaceID.**
 
-### ✨ Key Features
-* **Biometric Auth:** Uses WebAuthn (Secure Enclave) for instant login.
-* **Gasless Toggling:** A UI switch to demonstrate Sponsored vs. User-Paid transactions.
-* **Manual Session Persistence:** Custom hook logic to keep users logged in across refreshes.
-* **X-Ray Console:** A built-in "Dev Mode" terminal that visualizes the SDK logic in real-time.
-* **Atomic Transactions:** Optimized instruction size to prevent "Transaction Too Large" errors.
+### ✨ The 4-Module Suite
+1.  **🛍️ Virtual Store:** A complete e-commerce flow with cart simulation and instant settlement.
+2.  **🔄 DeFi Swap:** Zero-fee token swaps demonstrating the power of **Gasless Transactions**.
+3.  **💸 P2P Transfer:** Instant "CashApp-style" payments using biometrics.
+4.  **🎨 NFT Creator:** Upload assets and mint Compressed NFTs directly on-chain.
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Quick Start
 
 ### Prerequisites
 * Node.js 18+
 * A modern browser with WebAuthn support (Chrome, Safari, Edge).
-* **HTTPS Environment** (Required for Passkeys).
+* **HTTPS Environment** (Required for Passkeys). *Localhost is whitelisted by default.*
 
 ### Installation
 
 1.  **Clone the Repo**
     ```bash
-    git clone [https://github.com/YOUR_USERNAME/lazorpay-checkout.git](https://github.com/YOUR_USERNAME/lazorpay-checkout.git)
-    cd lazorpay-checkout
+    git clone [https://github.com/YOUR_USERNAME/lazorpay-hub.git](https://github.com/YOUR_USERNAME/lazorpay-hub.git)
+    cd lazorpay-hub
     ```
 
 2.  **Install Dependencies**
@@ -45,35 +44,44 @@ LazorPay proves that crypto onboarding doesn't have to be painful. By integratin
     ```bash
     npm run dev
     ```
-    *Note: If running locally, ensure you are using `https://localhost` via a proxy or `mkcert`. If using GitHub Codespaces, HTTPS is automatic.*
 
 4.  **Open the App**
-    Visit the URL provided in your terminal (usually `http://localhost:3000`).
+    Visit `http://localhost:3000`.
 
 ---
 
-## 🛠️ Configuration
+## 🏗️ Architecture
 
-The app is pre-configured for **Solana Devnet**.
-Configuration lives in `lib/constants.ts`:
+LazorPay Hub uses a **"Shell Architecture"** to ensure session persistence. The `GlobalHeader` and `LazorProvider` wrap the application, allowing users to navigate between modules without re-authenticating.
 
-```typescript
-export const APP_CONFIG = {
-  CLUSTER: "devnet",
-  RPC_URL: "[https://api.devnet.solana.com](https://api.devnet.solana.com)",
-  PORTAL_URL: "[https://portal.lazor.sh](https://portal.lazor.sh)",
-  PAYMASTER_URL: "[https://kora.devnet.lazorkit.com](https://kora.devnet.lazorkit.com)",
-};
+```mermaid
+graph TD
+    A[LazorProvider] --> B[GlobalHeader]
+    B --> C{Module Router}
+    C --> D[Store Page]
+    C --> E[Swap Page]
+    C --> F[Send Page]
+    C --> G[Mint Page]
+    
+    subgraph "Persistent Shell"
+    A
+    B
+    end
 ```
 
+### 🛠️ Key Components
+* **`components/ui/GlobalHeader.tsx`**: Manages the persistent login state and navigation.
+* **`components/ui/DevConsole.tsx`**: An "X-Ray" debugger that visualizes SDK events in real-time.
+* **`hooks/useLazorAuth.ts`**: Custom hook for manual session management logic.
+
 ---
 
-## 📚 Documentation & Tutorials
+## 📚 Tutorials & Guides
 
-We have included two detailed guides to help you integrate these features into your own app:
+We have written detailed guides to help you integrate these features into your own dApps:
 
-1.  **[Integration Guide](/docs/integration-guide.md)** - How to add the LazorProvider and Checkout Widget.
-2.  **[Gasless Setup](/docs/gasless-setup.md)** - How to configure the Paymaster for sponsored fees.
+1.  **[Integration Guide](/docs/01-integration-guide.md)** - How to add Passkey Auth to your Next.js app in 5 minutes.
+2.  **[Gasless Setup](/docs/02-gasless-setup.md)** - How to configure the Paymaster to sponsor user fees.
 
 ---
 
@@ -81,9 +89,9 @@ We have included two detailed guides to help you integrate these features into y
 
 | Error | Solution |
 | :--- | :--- |
-| **Login Failed / Not Allowed** | Ensure you are on **HTTPS**. Passkeys do not work on HTTP (except localhost in some browsers). |
-| **Transaction Too Large** | We use atomic transfer instructions. Avoid adding large Memo data to transactions. |
-| **Insufficient Funds** | If testing without Gasless mode, use the built-in "Faucet" link in the widget to fund your Smart Wallet. |
+| **Login Failed / Not Allowed** | Ensure you are testing on `localhost` or a secure `https` domain. Passkeys do not work on `http` IPs. |
+| **Transaction Failed** | Check the **X-Ray Console** (bottom of screen) for the specific error code. |
+| **Insufficient Funds** | Use the "Faucet" button in the checkout widget to get Devnet SOL. |
 
 ---
 
