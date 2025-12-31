@@ -6,69 +6,42 @@
   :root {
     --background: 0 0% 3%;
     --foreground: 0 0% 98%;
-    --border: 0 0% 90%; /* Lighter border for platinum feel */
+    --border: 0 0% 15%;
   }
 
+  /* Standard CSS Reset */
   * {
-    border-color: rgba(255, 255, 255, 0.1);
+    border-color: hsl(var(--border));
     border-style: solid;
   }
   
   body {
-    /* REMOVED THE GRID LINES */
-    background-color: #09090b; /* Zinc-950: Deep matte black/grey */
-    color: white; 
+    background-color: #050505; /* Pure Black Void */
+    color: white;
     font-family: 'Inter', sans-serif;
     min-height: 100vh;
     overflow-x: hidden;
+    /* GRID LINES REMOVED COMPLETELY */
   }
 }
 
 @layer components {
-  /* --- 1. GLASS SYSTEM --- */
+  /* --- 1. GLASS SYSTEM (Kept for Header/Modals only) --- */
   .glass {
-    background-color: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-  }
-
-  /* --- 2. THE PLATINUM PILL (Bright Surface, Black Text) --- */
-  .pill-platinum {
-    border-radius: 9999px;
-    /* The Platinum Gradient: White to Light Grey */
-    background: linear-gradient(180deg, #ffffff 0%, #e4e4e7 100%);
-    border: 1px solid #ffffff;
-    /* Black Text color defined here */
-    color: #18181b; 
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5); /* Drop shadow to pop off the dark bg */
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    background-color: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
   }
   
-  .pill-platinum:hover {
-    transform: scale(1.02);
-    box-shadow: 0 10px 40px rgba(255, 255, 255, 0.15); /* White glow on hover */
-    border-color: #ffffff;
+  .glass-strong {
+    background-color: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
   }
 
-  /* --- 3. PLATINUM BUTTONS --- */
-  .btn-primary {
-    background: #ffffff;
-    color: #000000;
-    font-weight: 800;
-    padding: 1rem 2rem;
-    border-radius: 9999px;
-    transition: all 0.3s;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-  }
-  
-  .btn-primary:hover {
-    background: #e4e4e7;
-    transform: scale(1.05);
-    box-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
-  }
-
-  /* --- 4. HERO INPUTS --- */
+  /* --- 2. HERO INPUTS (For Send/Swap) --- */
   .input-hero {
     width: 100%;
     background: transparent;
@@ -77,18 +50,34 @@
     color: white;
     outline: none;
     text-align: center;
-    border-bottom: 2px solid rgba(255,255,255,0.2);
+    transition: all 0.3s ease;
   }
   
-  .input-hero:focus {
-    border-color: #ffffff;
+  .input-hero::placeholder { color: rgba(255, 255, 255, 0.1); }
+  .input-hero:focus { color: #22D3EE; filter: drop-shadow(0 0 10px rgba(34, 211, 238, 0.5)); }
+
+  /* --- 3. BUTTONS (Green Primary maintained) --- */
+  .btn-primary {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(to right, rgb(16, 185, 129), rgb(5, 150, 105));
+    color: white;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: 9999px; /* Fully rounded */
+    transition: all 0.3s;
+  }
+  .btn-primary:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 30px rgba(16, 185, 129, 0.5);
   }
 
-  /* --- 5. 3D CARDS (Store) --- */
+  /* --- 4. 3D CARDS (For Store) --- */
   .card-3d {
     position: relative;
-    background: linear-gradient(145deg, #18181b, #09090b);
-    border: 1px solid rgba(255,255,255,0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(12px);
     border-radius: 1.5rem;
     transition: all 0.7s ease;
     cursor: pointer;
@@ -103,20 +92,18 @@
     max-width: 42rem;
     height: 70vh;
     z-index: 50;
-    background: #000;
-    border: 1px solid #fff;
+    background-color: black;
     transform: translate(-50%, -50%) !important;
   }
 }
 
 @layer utilities {
-  .text-glow { text-shadow: 0 0 20px rgba(255, 255, 255, 0.3); }
+  .text-glow { text-shadow: 0 0 20px rgba(255, 255, 255, 0.5); }
 
   /* Custom Scrollbar */
   .scrollbar-custom::-webkit-scrollbar { width: 6px; height: 6px; }
   .scrollbar-custom::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
   .scrollbar-custom::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 9999px; }
-  
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 }
