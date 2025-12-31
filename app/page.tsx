@@ -17,10 +17,9 @@ import { useLazorContext } from "@/components/Lazorkit/LazorProvider";
 
 // --- COMPONENTS ---
 
-// 1. The New "Stone & Sand" Pill Module
+// 1. The "Stone & Sand" Pill Module (Black Text, No Borders)
 function PillModule({ title, desc, icon: Icon, href, align, index }: any) {
   const isLeft = align === 'left';
-  // Logic: Even index = Stone Color, Odd index = Sand Color
   const pillColor = index % 2 === 0 ? 'bg-[#dcdff0]' : 'bg-[#ccccb1]';
   const hoverColor = index % 2 === 0 ? 'hover:bg-[#c4c7d9]' : 'hover:bg-[#b8b89f]';
   
@@ -32,8 +31,8 @@ function PillModule({ title, desc, icon: Icon, href, align, index }: any) {
         style={{ animationDelay: `${index * 100}ms` }}
       >
         <div className="relative z-10 space-y-4">
-          {/* Icon Badge - Dark background for contrast */}
-          <div className="mx-auto w-16 h-16 rounded-full bg-black/5 border border-black/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
+          {/* Icon Badge - Clean, no extra borders */}
+          <div className="mx-auto w-16 h-16 rounded-full bg-black/5 flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
             <Icon className="w-8 h-8 text-black" />
           </div>
 
@@ -47,7 +46,7 @@ function PillModule({ title, desc, icon: Icon, href, align, index }: any) {
             </p>
           </div>
 
-          {/* Action Hint - Dark Arrow */}
+          {/* Action Hint */}
           <div className="pt-6 opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-4 group-hover:translate-y-0">
             <div className="inline-flex items-center gap-2 text-black text-sm font-bold tracking-[0.2em] uppercase">
               Launch Module <ArrowRight className="w-4 h-4" />
@@ -59,7 +58,7 @@ function PillModule({ title, desc, icon: Icon, href, align, index }: any) {
   );
 }
 
-// 2. The Tech Reveal Code Snippet (Kept as requested)
+// 2. Tech Reveal (Kept as is)
 function TechReveal() {
   return (
     <div className="hidden md:block absolute right-[-20px] top-1/2 -translate-y-1/2 translate-x-full pl-8 opacity-0 group-hover:opacity-100 transition-all duration-500">
@@ -140,9 +139,9 @@ export default function HubPage() {
   return (
     <div className="min-h-screen py-32 px-4 overflow-hidden relative">
       
-      {/* 1. HERO HEADER (Unchanged Logic, just removed blue glows) */}
       <div className="max-w-5xl mx-auto space-y-32 relative z-10">
         
+        {/* HERO SECTION */}
         <div className="text-center space-y-6 animate-in fade-in slide-in-from-top duration-1000">
           <div className="inline-flex items-center gap-3 glass px-6 py-2 rounded-full border-white/10">
             <span className="relative flex h-2 w-2">
@@ -152,8 +151,9 @@ export default function HubPage() {
             <span className="text-xs font-bold tracking-[0.2em] text-white">V2.0 ONLINE</span>
           </div>
           
+          {/* FIXED: Reverted "PAY" to vibrant Neon Gradient */}
           <h1 className="text-7xl md:text-9xl font-black text-white tracking-tighter leading-none text-glow">
-            LAZOR<span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-[#dcdff0]">PAY</span>
+            LAZOR<span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-cyan-500 to-purple-500 animate-gradient">PAY</span>
           </h1>
           
           <p className="text-xl text-white/50 font-light tracking-wide max-w-2xl mx-auto">
@@ -161,7 +161,7 @@ export default function HubPage() {
           </p>
         </div>
 
-        {/* 2. THE ZIG-ZAG MODULES (Now Stone & Sand) */}
+        {/* ZIG-ZAG PILLS */}
         <div className="space-y-12">
           {modules.map((mod, i) => (
             <PillModule 
@@ -173,7 +173,7 @@ export default function HubPage() {
           ))}
         </div>
 
-        {/* 3. THE REACTOR CORE (Green Connect Button - Unchanged) */}
+        {/* CONNECT BUTTON */}
         <div className="flex justify-center pt-20 pb-10">
           <div className="relative group">
             <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full blur opacity-40 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
@@ -187,7 +187,6 @@ export default function HubPage() {
               {isConnected ? "SESSION ACTIVE" : "CONNECT PASSKEY"}
             </button>
 
-            {/* Educational Hover Side-Panel */}
             <TechReveal />
           </div>
         </div>
