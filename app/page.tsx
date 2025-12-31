@@ -12,8 +12,8 @@ import {
   Zap,
   Shield,
   Sparkles,
-  CheckCircle,
-  ArrowRight
+  ArrowRight,
+  Activity
 } from "lucide-react";
 
 interface ModuleCardProps {
@@ -33,252 +33,168 @@ function ModuleCard({ title, desc, icon: Icon, href, color, delay }: ModuleCardP
       href={href}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="group relative glass hover:glass-strong rounded-2xl overflow-hidden transition-all duration-500 hover:scale-[1.02] hover:-translate-y-2"
+      className="group relative glass hover:glass-strong rounded-3xl overflow-hidden transition-all duration-500 hover:scale-[1.02] hover:-translate-y-2 flex flex-col min-h-[280px]"
       style={{ animationDelay: `${delay}ms` }}
     >
-      {/* Animated gradient background */}
+      {/* Animated gradient background (subtle) */}
       <div className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 bg-gradient-to-br ${color}`} />
       
-      {/* Glow effect */}
-      <div className={`absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-500 blur-2xl ${color.includes('emerald') ? 'bg-emerald-500' : color.includes('blue') ? 'bg-blue-500' : color.includes('pink') ? 'bg-pink-500' : color.includes('yellow') ? 'bg-yellow-500' : color.includes('purple') ? 'bg-purple-500' : 'bg-cyan-500'}`} />
+      {/* Glow effect blob */}
+      <div className={`absolute -right-20 -top-20 w-64 h-64 opacity-0 group-hover:opacity-20 transition-opacity duration-500 blur-3xl rounded-full ${color.includes('emerald') ? 'bg-emerald-500' : color.includes('blue') ? 'bg-blue-500' : 'bg-purple-500'}`} />
 
-      <div className="relative p-8 h-full flex flex-col">
-        {/* Icon Container */}
+      <div className="relative p-8 h-full flex flex-col z-10">
+        {/* Icon */}
         <div className="mb-6">
-          <div className={`w-16 h-16 rounded-2xl flex items-center justify-center bg-gradient-to-br ${color} transform transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6`}>
-            <Icon className="w-8 h-8 text-white" />
+          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center bg-gradient-to-br ${color} shadow-lg transform transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6`}>
+            <Icon className="w-7 h-7 text-white" />
           </div>
         </div>
 
-        {/* Content */}
-        <div className="flex-1">
-          <h3 className="text-2xl font-bold text-white mb-3 group-hover:text-gradient transition-all">
+        {/* Text */}
+        <div className="flex-1 space-y-3">
+          <h3 className="text-2xl font-bold text-white group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-white/70 transition-all">
             {title}
           </h3>
-          <p className="text-white/60 text-sm leading-relaxed">
+          <p className="text-white/50 text-sm leading-relaxed font-medium">
             {desc}
           </p>
         </div>
 
-        {/* Action hint */}
-        <div className="flex items-center gap-2 text-white/40 group-hover:text-white/80 transition-colors mt-6">
-          <span className="text-xs font-semibold tracking-wider">EXPLORE</span>
+        {/* Action Footer */}
+        <div className="flex items-center gap-2 text-white/40 group-hover:text-white transition-colors mt-8 pt-6 border-t border-white/5 group-hover:border-white/10">
+          <span className="text-[10px] font-bold tracking-[0.2em] uppercase">Launch App</span>
           <ArrowRight className={`w-4 h-4 transition-transform duration-300 ${isHovered ? 'translate-x-1' : ''}`} />
         </div>
-
-        {/* Hover border effect */}
-        <div className="absolute inset-0 border border-white/0 group-hover:border-white/20 rounded-2xl transition-all duration-300" />
       </div>
     </Link>
   );
 }
 
 export default function HubPage() {
-  const features = [
-    {
-      icon: Zap,
-      title: "Instant Settlement",
-      desc: "Transactions confirmed in under 400ms"
-    },
-    {
-      icon: Shield,
-      title: "Gasless Payments",
-      desc: "Protocol sponsors all network fees"
-    },
-    {
-      icon: Sparkles,
-      title: "Passkey Auth",
-      desc: "Biometric security, no seed phrases"
-    }
-  ];
-
   const stats = [
-    { value: "0.4s", label: "Avg. Confirmation" },
-    { value: "$0.00", label: "User Gas Fees" },
-    { value: "99.9%", label: "Uptime" },
-    { value: "6", label: "Live Modules" }
+    { value: "0.4s", label: "LATENCY", icon: Zap },
+    { value: "$0.00", label: "GAS FEES", icon: Shield },
+    { value: "100%", label: "UPTIME", icon: Activity },
   ];
 
   return (
-    <div className="space-y-24 py-12">
+    <div className="min-h-screen py-20 relative overflow-hidden">
       
-      {/* Hero Section */}
-      <div className="relative">
-        {/* Background Effects */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-emerald-500/10 blur-[120px] rounded-full animate-pulse-glow" />
-        <div className="absolute top-1/2 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-blue-500/10 blur-[100px] rounded-full animate-pulse-glow" style={{ animationDelay: '1s' }} />
+      {/* Background Decor */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[400px] bg-emerald-500/10 blur-[120px] rounded-full pointer-events-none" />
+      
+      <div className="relative z-10 space-y-24">
         
-        <div className="relative text-center space-y-8 max-w-4xl mx-auto px-4">
+        {/* HERO SECTION */}
+        <div className="text-center space-y-8 max-w-5xl mx-auto px-4">
           
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 glass px-4 py-2 rounded-full animate-in fade-in slide-in-from-top duration-500">
+          {/* Status Pill */}
+          <div className="inline-flex items-center gap-2 glass-strong px-4 py-1.5 rounded-full animate-in fade-in slide-in-from-top duration-700 backdrop-blur-md border border-emerald-500/20">
             <div className="status-dot online" />
-            <span className="text-xs font-semibold text-white/80">V2.0 LIVE ON DEVNET</span>
+            <span className="text-[10px] font-bold tracking-widest text-emerald-400">SYSTEM ONLINE // V2.0</span>
           </div>
 
-          {/* Main Heading */}
-          <h1 className="text-6xl md:text-8xl font-black tracking-tighter text-white animate-in fade-in slide-in-from-bottom duration-700" style={{ animationDelay: '200ms' }}>
-            LAZOR<span className="text-gradient">PAY</span>
-          </h1>
+          {/* Main Title */}
+          <div className="space-y-2">
+            <h1 className="text-6xl md:text-8xl font-black tracking-tighter text-white animate-in fade-in slide-in-from-bottom duration-1000">
+              LAZOR<span className="text-gradient">PAY</span>
+            </h1>
+            <p className="text-xl md:text-2xl text-white/60 max-w-2xl mx-auto font-light leading-relaxed animate-in fade-in slide-in-from-bottom duration-1000 delay-100">
+              The production-ready checkout suite for Solana. <br />
+              <span className="text-white font-medium">Passkey Auth</span> meets <span className="text-white font-medium">Gasless Transactions</span>.
+            </p>
+          </div>
 
-          {/* Subheading */}
-          <p className="text-xl md:text-2xl text-white/70 max-w-2xl mx-auto leading-relaxed animate-in fade-in slide-in-from-bottom duration-700" style={{ animationDelay: '400ms' }}>
-            The production-ready checkout suite for Solana. Experience the speed of <span className="text-white font-semibold">Passkeys</span> and the magic of <span className="text-white font-semibold">Gasless Transactions</span>.
-          </p>
+          {/* Stats Bar */}
+          <div className="grid grid-cols-3 gap-4 max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom duration-1000 delay-200">
+            {stats.map((stat, i) => (
+              <div key={i} className="glass rounded-2xl p-4 flex flex-col items-center justify-center hover:bg-white/5 transition-colors group">
+                <stat.icon className="w-4 h-4 text-white/40 mb-2 group-hover:text-emerald-400 transition-colors" />
+                <div className="text-2xl font-bold text-white">{stat.value}</div>
+                <div className="text-[10px] font-bold text-white/40 tracking-widest">{stat.label}</div>
+              </div>
+            ))}
+          </div>
 
           {/* CTA Buttons */}
-          <div className="flex flex-wrap items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom duration-700" style={{ animationDelay: '600ms' }}>
-            <Link 
-              href="/store"
-              className="btn-primary text-lg"
-            >
-              Try Demo
-              <ArrowRight className="w-5 h-5 ml-2 inline" />
+          <div className="flex items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom duration-1000 delay-300 pt-4">
+            <Link href="/store" className="btn-primary shadow-lg shadow-emerald-500/20">
+              Start Demo <ArrowRight className="w-4 h-4 ml-2 inline" />
             </Link>
             <a 
-              href="https://github.com/yourusername/lazorpay" 
+              href="https://github.com/lazor-kit/lazor-kit" 
               target="_blank"
-              className="glass hover:glass-strong px-6 py-3 rounded-xl font-semibold transition-all hover:scale-105"
+              className="glass px-8 py-3 rounded-xl font-bold text-white hover:bg-white/10 transition-all hover:scale-105"
             >
-              View Docs
+              Documentation
             </a>
           </div>
         </div>
-      </div>
 
-      {/* Stats Section */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-5xl mx-auto px-4">
-        {stats.map((stat, i) => (
-          <div 
-            key={i}
-            className="glass rounded-2xl p-6 text-center hover:glass-strong transition-all hover:scale-105 animate-in fade-in slide-in-from-bottom duration-500"
-            style={{ animationDelay: `${800 + i * 100}ms` }}
-          >
-            <div className="text-3xl md:text-4xl font-black text-gradient mb-2">
-              {stat.value}
-            </div>
-            <div className="text-sm text-white/60">
-              {stat.label}
-            </div>
+        {/* MODULES GRID */}
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex items-center justify-between mb-8 px-2">
+            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-emerald-400" /> 
+              Active Modules
+            </h2>
+            <div className="text-xs font-mono text-white/40">6/6 OPERATIONAL</div>
           </div>
-        ))}
-      </div>
 
-      {/* Features Grid */}
-      <div className="max-w-5xl mx-auto px-4">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">
-            Built for Production
-          </h2>
-          <p className="text-white/60 text-lg">
-            Enterprise-grade infrastructure meets developer-friendly APIs
-          </p>
-        </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <ModuleCard 
+              title="Virtual Store"
+              desc="E-commerce checkout flow with product details, cart simulation, and instant settlement."
+              icon={ShoppingBag}
+              href="/store"
+              color="from-emerald-500 to-emerald-600"
+              delay={0}
+            />
 
-        <div className="grid md:grid-cols-3 gap-6">
-          {features.map((feature, i) => (
-            <div 
-              key={i}
-              className="glass rounded-2xl p-8 hover:glass-strong transition-all hover:scale-105 animate-in fade-in slide-in-from-bottom duration-500"
-              style={{ animationDelay: `${1200 + i * 100}ms` }}
-            >
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center mb-4">
-                <feature.icon className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-white mb-2">
-                {feature.title}
-              </h3>
-              <p className="text-white/60 text-sm">
-                {feature.desc}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
+            <ModuleCard 
+              title="DeFi Swap"
+              desc="Zero-fee token swaps. Trade SOL for USDC instantly without holding SOL for gas."
+              icon={ArrowLeftRight}
+              href="/swap"
+              color="from-blue-500 to-blue-600"
+              delay={100}
+            />
 
-      {/* Modules Section */}
-      <div className="max-w-6xl mx-auto px-4">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">
-            Explore Modules
-          </h2>
-          <p className="text-white/60 text-lg">
-            Six real-world use cases, one unified experience
-          </p>
-        </div>
+            <ModuleCard 
+              title="P2P Transfer"
+              desc="Send money like a text message. Attach memos and transact with passkey speed."
+              icon={Send}
+              href="/send"
+              color="from-yellow-500 to-yellow-600"
+              delay={200}
+            />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom duration-700" style={{ animationDelay: '1500ms' }}>
-          <ModuleCard 
-            title="Virtual Store"
-            desc="E-commerce checkout with instant settlement and cart simulation."
-            icon={ShoppingBag}
-            href="/store"
-            color="from-emerald-500 to-emerald-600"
-            delay={0}
-          />
+            <ModuleCard 
+              title="NFT Creator"
+              desc="Upload assets and mint compressed NFTs on-chain directly from your browser."
+              icon={ImageIcon}
+              href="/mint"
+              color="from-pink-500 to-pink-600"
+              delay={300}
+            />
 
-          <ModuleCard 
-            title="DeFi Swap"
-            desc="Zero-fee token swaps without holding SOL for gas."
-            icon={ArrowLeftRight}
-            href="/swap"
-            color="from-blue-500 to-blue-600"
-            delay={100}
-          />
+            <ModuleCard 
+              title="Instant Trade"
+              desc="Simplified CEX interface. Simulate live market orders with one-click execution."
+              icon={TrendingUp}
+              href="/trade"
+              color="from-purple-500 to-purple-600"
+              delay={400}
+            />
 
-          <ModuleCard 
-            title="P2P Transfer"
-            desc="Send money instantly with memo support."
-            icon={Send}
-            href="/send"
-            color="from-yellow-500 to-yellow-600"
-            delay={200}
-          />
-
-          <ModuleCard 
-            title="NFT Creator"
-            desc="Upload and mint compressed NFTs on-chain."
-            icon={ImageIcon}
-            href="/mint"
-            color="from-pink-500 to-pink-600"
-            delay={300}
-          />
-
-          <ModuleCard 
-            title="Instant Trade"
-            desc="Simplified CEX interface with one-click execution."
-            icon={TrendingUp}
-            href="/trade"
-            color="from-purple-500 to-purple-600"
-            delay={400}
-          />
-
-          <ModuleCard 
-            title="Subscriptions"
-            desc="Recurring billing with smart wallet delegation."
-            icon={CreditCard}
-            href="/subs"
-            color="from-cyan-500 to-cyan-600"
-            delay={500}
-          />
-        </div>
-      </div>
-
-      {/* CTA Section */}
-      <div className="relative">
-        <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 via-blue-500/20 to-purple-500/20 blur-[100px]" />
-        <div className="relative glass-strong rounded-3xl p-12 max-w-4xl mx-auto text-center space-y-6">
-          <h2 className="text-4xl font-bold text-white">
-            Ready to Build?
-          </h2>
-          <p className="text-white/70 text-lg max-w-2xl mx-auto">
-            Join developers building the future of payments on Solana. Get started in minutes with our comprehensive SDK.
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            <Link href="/store" className="btn-primary text-lg">
-              Start Building
-              <Sparkles className="w-5 h-5 ml-2 inline" />
-            </Link>
+            <ModuleCard 
+              title="Subscriptions"
+              desc="SaaS pricing demo. Setup recurring billing plans with smart wallet delegation."
+              icon={CreditCard}
+              href="/subs"
+              color="from-cyan-500 to-cyan-600"
+              delay={500}
+            />
           </div>
         </div>
       </div>
