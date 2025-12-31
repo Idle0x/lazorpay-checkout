@@ -18,7 +18,7 @@ import { useLazorContext } from "@/components/Lazorkit/LazorProvider";
 export default function SwapPage() {
   const [amount, setAmount] = useState("");
   const [quote, setQuote] = useState("");
-  const [isSwapping, setIsSwapping] = useState(false); // UI state for the flip animation
+  const [isSwapping, setIsSwapping] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [success, setSuccess] = useState(false);
   
@@ -35,9 +35,8 @@ export default function SwapPage() {
       setQuote("");
       return;
     }
-    // Simulate calculation delay
     const timer = setTimeout(() => {
-      const val = parseFloat(amount) * 145.20; // Fake SOL price
+      const val = parseFloat(amount) * 145.20; 
       setQuote(val.toFixed(2));
     }, 200);
     return () => clearTimeout(timer);
@@ -46,7 +45,6 @@ export default function SwapPage() {
   const handleFlip = () => {
     setIsSwapping(true);
     setTimeout(() => {
-      // Swap Logic
       setFromToken(toToken);
       setToToken(fromToken);
       setAmount(quote);
@@ -101,7 +99,7 @@ const ix = await jupiter.swap({
 
         {/* Success Overlay */}
         {success ? (
-           <div className="glass-strong rounded-[3rem] p-12 min-h-[500px] flex flex-col items-center justify-center text-center animate-in zoom-in duration-300">
+           <div className="glass-strong rounded-[3rem] p-12 min-h-[600px] flex flex-col items-center justify-center text-center animate-in zoom-in duration-300">
               <div className="w-24 h-24 rounded-full bg-emerald-500/20 flex items-center justify-center mb-6 border border-emerald-500/50 shadow-[0_0_40px_rgba(16,185,129,0.4)]">
                  <CheckCircle className="w-12 h-12 text-emerald-400" />
               </div>
@@ -119,49 +117,49 @@ const ix = await jupiter.swap({
         ) : (
            <div className="relative space-y-4">
               
-              {/* TOP CONTAINER (FROM) */}
-              <div className={`glass-strong rounded-[2.5rem] p-8 transition-all duration-500 transform ${isSwapping ? 'translate-y-40 opacity-50 scale-90' : 'translate-y-0 opacity-100'}`}>
+              {/* TOP CONTAINER (FROM) - TALLER */}
+              <div className={`glass-strong rounded-[3rem] px-10 py-14 min-h-[320px] flex flex-col justify-between transition-all duration-500 transform ${isSwapping ? 'translate-y-40 opacity-50 scale-90' : 'translate-y-0 opacity-100'}`}>
                  <div className="flex justify-between items-center mb-4">
                     <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Selling</span>
                     <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Balance: 4.20</span>
                  </div>
                  
-                 <div className="flex items-center justify-between gap-4">
+                 <div className="flex items-center justify-between gap-4 flex-1">
                     <input 
                        type="number"
                        value={amount}
                        onChange={(e) => setAmount(e.target.value)}
                        placeholder="0.00"
-                       className="w-full bg-transparent text-6xl font-black text-white outline-none placeholder-zinc-700"
+                       className="w-full bg-transparent text-7xl font-black text-white outline-none placeholder-zinc-700 h-full"
                     />
-                    <div className={`text-4xl font-black ${fromToken.color} px-4 py-2 rounded-xl bg-white/5 border border-white/10`}>
+                    <div className={`text-4xl font-black ${fromToken.color} px-6 py-4 rounded-2xl bg-white/5 border border-white/10`}>
                        {fromToken.sym}
                     </div>
                  </div>
               </div>
 
               {/* LIGHTNING SWITCH BUTTON */}
-              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
+              <div className="absolute left-1/2 top-[48%] -translate-x-1/2 -translate-y-1/2 z-20">
                  <button 
                     onClick={handleFlip}
-                    className="w-16 h-16 rounded-full bg-black border-4 border-zinc-800 flex items-center justify-center hover:scale-110 hover:border-cyan-400 transition-all duration-300 shadow-xl group"
+                    className="w-20 h-20 rounded-full bg-black border-4 border-zinc-800 flex items-center justify-center hover:scale-110 hover:border-cyan-400 transition-all duration-300 shadow-2xl group"
                  >
-                    <ArrowDownUp className="w-6 h-6 text-white group-hover:rotate-180 transition-transform duration-500" />
+                    <ArrowDownUp className="w-8 h-8 text-white group-hover:rotate-180 transition-transform duration-500" />
                  </button>
               </div>
 
-              {/* BOTTOM CONTAINER (TO) */}
-              <div className={`glass-strong rounded-[2.5rem] p-8 bg-black/40 transition-all duration-500 transform ${isSwapping ? '-translate-y-40 opacity-50 scale-90' : 'translate-y-0 opacity-100'}`}>
+              {/* BOTTOM CONTAINER (TO) - TALLER */}
+              <div className={`glass-strong rounded-[3rem] px-10 py-14 min-h-[320px] flex flex-col justify-between bg-black/40 transition-all duration-500 transform ${isSwapping ? '-translate-y-40 opacity-50 scale-90' : 'translate-y-0 opacity-100'}`}>
                  <div className="flex justify-between items-center mb-4">
                     <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Buying</span>
                     {amount && <span className="text-xs font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-1"><Zap className="w-3 h-3" /> Best Price</span>}
                  </div>
                  
-                 <div className="flex items-center justify-between gap-4">
-                    <div className="w-full text-6xl font-black text-zinc-300 truncate">
+                 <div className="flex items-center justify-between gap-4 flex-1">
+                    <div className="w-full text-7xl font-black text-zinc-300 truncate h-full flex items-center">
                        {quote || "0.00"}
                     </div>
-                    <div className={`text-4xl font-black ${toToken.color} px-4 py-2 rounded-xl bg-white/5 border border-white/10`}>
+                    <div className={`text-4xl font-black ${toToken.color} px-6 py-4 rounded-2xl bg-white/5 border border-white/10`}>
                        {toToken.sym}
                     </div>
                  </div>
@@ -171,7 +169,7 @@ const ix = await jupiter.swap({
               <button 
                  onClick={executeSwap}
                  disabled={processing}
-                 className="w-full py-6 mt-4 rounded-3xl bg-white text-black text-2xl font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-lg flex items-center justify-center gap-3"
+                 className="w-full py-8 mt-6 rounded-[2rem] bg-white text-black text-3xl font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-lg flex items-center justify-center gap-4"
               >
                  {processing ? (
                     <><Loader2 className="w-8 h-8 animate-spin" /> CONFIRMING</>
