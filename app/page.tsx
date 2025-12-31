@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
 import { 
   ShoppingBag, 
   ArrowLeftRight, 
@@ -10,193 +9,194 @@ import {
   TrendingUp, 
   CreditCard,
   Zap,
-  Shield,
-  Sparkles,
   ArrowRight,
-  Activity
+  Fingerprint,
+  Code2
 } from "lucide-react";
+import { useWallet } from "@lazorkit/wallet";
+import { useLazorContext } from "@/components/Lazorkit/LazorProvider";
 
-interface ModuleCardProps {
-  title: string;
-  desc: string;
-  icon: any;
-  href: string;
-  color: string;
-  delay: number;
-}
+// --- COMPONENTS ---
 
-function ModuleCard({ title, desc, icon: Icon, href, color, delay }: ModuleCardProps) {
-  const [isHovered, setIsHovered] = useState(false);
+// 1. The "Pill" Module Link
+function PillModule({ title, desc, icon: Icon, href, align, index }: any) {
+  const isLeft = align === 'left';
   
   return (
-    <Link 
-      href={href}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      className="group relative glass hover:glass-strong rounded-3xl overflow-hidden transition-all duration-500 hover:scale-[1.02] hover:-translate-y-2 flex flex-col min-h-[280px]"
-      style={{ animationDelay: `${delay}ms` }}
-    >
-      {/* Animated gradient background (subtle) */}
-      <div className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 bg-gradient-to-br ${color}`} />
-      
-      {/* Glow effect blob */}
-      <div className={`absolute -right-20 -top-20 w-64 h-64 opacity-0 group-hover:opacity-20 transition-opacity duration-500 blur-3xl rounded-full ${color.includes('emerald') ? 'bg-emerald-500' : color.includes('blue') ? 'bg-blue-500' : 'bg-purple-500'}`} />
+    <div className={`flex w-full ${isLeft ? 'justify-start' : 'justify-end'}`}>
+      <Link 
+        href={href}
+        className="group relative w-full md:w-[70%] pill-glass p-8 md:p-12 flex flex-col items-center justify-center text-center overflow-hidden"
+        style={{ animationDelay: `${index * 100}ms` }}
+      >
+        {/* Hover Glow Background */}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-400/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 translate-x-[-100%] group-hover:translate-x-[100%] transform" />
 
-      <div className="relative p-8 h-full flex flex-col z-10">
-        {/* Icon */}
-        <div className="mb-6">
-          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center bg-gradient-to-br ${color} shadow-lg transform transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6`}>
-            <Icon className="w-7 h-7 text-white" />
+        <div className="relative z-10 space-y-4">
+          {/* Icon Badge */}
+          <div className="mx-auto w-16 h-16 rounded-full border border-white/20 bg-white/5 flex items-center justify-center group-hover:scale-110 group-hover:border-cyan-400/50 transition-all duration-500 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
+            <Icon className="w-8 h-8 text-white/80 group-hover:text-cyan-400 transition-colors" />
+          </div>
+
+          {/* Typography */}
+          <div>
+            <h3 className="text-4xl md:text-5xl font-black text-white tracking-tighter mb-2 group-hover:text-glow-cyan transition-all">
+              {title}
+            </h3>
+            <p className="text-lg text-white/50 max-w-md mx-auto leading-relaxed">
+              {desc}
+            </p>
+          </div>
+
+          {/* Action Hint */}
+          <div className="pt-6 opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-4 group-hover:translate-y-0">
+            <div className="inline-flex items-center gap-2 text-cyan-400 text-sm font-bold tracking-[0.2em] uppercase">
+              Launch Module <ArrowRight className="w-4 h-4" />
+            </div>
           </div>
         </div>
+      </Link>
+    </div>
+  );
+}
 
-        {/* Text */}
-        <div className="flex-1 space-y-3">
-          <h3 className="text-2xl font-bold text-white group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-white/70 transition-all">
-            {title}
-          </h3>
-          <p className="text-white/50 text-sm leading-relaxed font-medium">
-            {desc}
-          </p>
+// 2. The Tech Reveal Code Snippet
+function TechReveal() {
+  return (
+    <div className="hidden md:block absolute right-[-20px] top-1/2 -translate-y-1/2 translate-x-full pl-8 opacity-0 group-hover:opacity-100 transition-all duration-500">
+      <div className="glass p-4 rounded-xl border-l-4 border-emerald-500">
+        <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold mb-2 uppercase tracking-wider">
+          <Code2 className="w-3 h-3" /> LazorKit SDK
         </div>
-
-        {/* Action Footer */}
-        <div className="flex items-center gap-2 text-white/40 group-hover:text-white transition-colors mt-8 pt-6 border-t border-white/5 group-hover:border-white/10">
-          <span className="text-[10px] font-bold tracking-[0.2em] uppercase">Launch App</span>
-          <ArrowRight className={`w-4 h-4 transition-transform duration-300 ${isHovered ? 'translate-x-1' : ''}`} />
-        </div>
+        <pre className="text-[10px] font-mono text-white/70">
+{`await connect({
+  passkey: true,
+  chain: "solana"
+});`}
+        </pre>
       </div>
-    </Link>
+    </div>
   );
 }
 
 export default function HubPage() {
-  const stats = [
-    { value: "0.4s", label: "LATENCY", icon: Zap },
-    { value: "$0.00", label: "GAS FEES", icon: Shield },
-    { value: "100%", label: "UPTIME", icon: Activity },
+  const { connect } = useWallet();
+  const { isConnected, wallet, saveSession } = useLazorContext();
+
+  const handleConnect = async () => {
+    try {
+      const data = await connect();
+      if (data?.smartWallet) {
+        saveSession({
+          credentialId: data.credentialId || "",
+          passkeyPubkey: data.passkeyPubkey ? JSON.stringify(data.passkeyPubkey) : "",
+          smartWallet: data.smartWallet,
+          walletDevice: data.walletDevice || "web"
+        });
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const modules = [
+    {
+      title: "Virtual Store",
+      desc: "Interactive e-commerce showcase featuring one-click checkout.",
+      icon: ShoppingBag,
+      href: "/store"
+    },
+    {
+      title: "DeFi Swap",
+      desc: "Atomic token swaps with zero-latency visual feedback.",
+      icon: ArrowLeftRight,
+      href: "/swap"
+    },
+    {
+      title: "P2P Transfer",
+      desc: "Instant payments with social-layer identity resolution.",
+      icon: Send,
+      href: "/send"
+    },
+    {
+      title: "NFT Mint",
+      desc: "Drag-and-drop creation tool with compressed state compression.",
+      icon: ImageIcon,
+      href: "/mint"
+    },
+    {
+      title: "Pro Trading",
+      desc: "High-frequency terminal interface with session key delegation.",
+      icon: TrendingUp,
+      href: "/trade"
+    },
+    {
+      title: "Subscriptions",
+      desc: "Recurring billing authorization logic for SaaS models.",
+      icon: CreditCard,
+      href: "/subs"
+    }
   ];
 
   return (
-    <div className="min-h-screen py-20 relative overflow-hidden">
+    <div className="min-h-screen py-32 px-4 overflow-hidden relative">
       
-      {/* Background Decor */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[400px] bg-emerald-500/10 blur-[120px] rounded-full pointer-events-none" />
+      {/* Background Ambience */}
+      <div className="fixed top-0 left-0 w-full h-[50vh] bg-gradient-to-b from-cyan-500/5 to-transparent pointer-events-none" />
       
-      <div className="relative z-10 space-y-24">
+      <div className="max-w-5xl mx-auto space-y-32 relative z-10">
         
-        {/* HERO SECTION */}
-        <div className="text-center space-y-8 max-w-5xl mx-auto px-4">
+        {/* 1. HERO HEADER */}
+        <div className="text-center space-y-6 animate-in fade-in slide-in-from-top duration-1000">
+          <div className="inline-flex items-center gap-3 glass px-6 py-2 rounded-full border-cyan-500/30">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
+            </span>
+            <span className="text-xs font-bold tracking-[0.2em] text-cyan-400">V2.0 ONLINE</span>
+          </div>
           
-          {/* Status Pill */}
-          <div className="inline-flex items-center gap-2 glass-strong px-4 py-1.5 rounded-full animate-in fade-in slide-in-from-top duration-700 backdrop-blur-md border border-emerald-500/20">
-            <div className="status-dot online" />
-            <span className="text-[10px] font-bold tracking-widest text-emerald-400">SYSTEM ONLINE // V2.0</span>
-          </div>
+          <h1 className="text-7xl md:text-9xl font-black text-white tracking-tighter leading-none text-glow">
+            LAZOR<span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-500">PAY</span>
+          </h1>
+          
+          <p className="text-xl text-white/50 font-light tracking-wide max-w-2xl mx-auto">
+            THE PRODUCTION SUITE FOR SOLANA
+          </p>
+        </div>
 
-          {/* Main Title */}
-          <div className="space-y-2">
-            <h1 className="text-6xl md:text-8xl font-black tracking-tighter text-white animate-in fade-in slide-in-from-bottom duration-1000">
-              LAZOR<span className="text-gradient">PAY</span>
-            </h1>
-            <p className="text-xl md:text-2xl text-white/60 max-w-2xl mx-auto font-light leading-relaxed animate-in fade-in slide-in-from-bottom duration-1000 delay-100">
-              The production-ready checkout suite for Solana. <br />
-              <span className="text-white font-medium">Passkey Auth</span> meets <span className="text-white font-medium">Gasless Transactions</span>.
-            </p>
-          </div>
+        {/* 2. THE ZIG-ZAG MODULES */}
+        <div className="space-y-12">
+          {modules.map((mod, i) => (
+            <PillModule 
+              key={i}
+              {...mod}
+              index={i}
+              align={i % 2 === 0 ? 'left' : 'right'}
+            />
+          ))}
+        </div>
 
-          {/* Stats Bar */}
-          <div className="grid grid-cols-3 gap-4 max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom duration-1000 delay-200">
-            {stats.map((stat, i) => (
-              <div key={i} className="glass rounded-2xl p-4 flex flex-col items-center justify-center hover:bg-white/5 transition-colors group">
-                <stat.icon className="w-4 h-4 text-white/40 mb-2 group-hover:text-emerald-400 transition-colors" />
-                <div className="text-2xl font-bold text-white">{stat.value}</div>
-                <div className="text-[10px] font-bold text-white/40 tracking-widest">{stat.label}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* CTA Buttons */}
-          <div className="flex items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom duration-1000 delay-300 pt-4">
-            <Link href="/store" className="btn-primary shadow-lg shadow-emerald-500/20">
-              Start Demo <ArrowRight className="w-4 h-4 ml-2 inline" />
-            </Link>
-            <a 
-              href="https://github.com/lazor-kit/lazor-kit" 
-              target="_blank"
-              className="glass px-8 py-3 rounded-xl font-bold text-white hover:bg-white/10 transition-all hover:scale-105"
+        {/* 3. THE REACTOR CORE (Connect Button) */}
+        <div className="flex justify-center pt-20 pb-10">
+          <div className="relative group">
+            {/* The Pulse Effect */}
+            <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-full blur opacity-40 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-pulse-slow"></div>
+            
+            <button 
+              onClick={handleConnect}
+              disabled={isConnected}
+              className="relative btn-primary px-12 py-6 text-2xl rounded-full flex items-center gap-4 hover:scale-105 transition-transform"
             >
-              Documentation
-            </a>
+              <Fingerprint className="w-8 h-8" />
+              {isConnected ? "SESSION ACTIVE" : "CONNECT PASSKEY"}
+            </button>
+
+            {/* Educational Hover Side-Panel */}
+            <TechReveal />
           </div>
         </div>
 
-        {/* MODULES GRID */}
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex items-center justify-between mb-8 px-2">
-            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-emerald-400" /> 
-              Active Modules
-            </h2>
-            <div className="text-xs font-mono text-white/40">6/6 OPERATIONAL</div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <ModuleCard 
-              title="Virtual Store"
-              desc="E-commerce checkout flow with product details, cart simulation, and instant settlement."
-              icon={ShoppingBag}
-              href="/store"
-              color="from-emerald-500 to-emerald-600"
-              delay={0}
-            />
-
-            <ModuleCard 
-              title="DeFi Swap"
-              desc="Zero-fee token swaps. Trade SOL for USDC instantly without holding SOL for gas."
-              icon={ArrowLeftRight}
-              href="/swap"
-              color="from-blue-500 to-blue-600"
-              delay={100}
-            />
-
-            <ModuleCard 
-              title="P2P Transfer"
-              desc="Send money like a text message. Attach memos and transact with passkey speed."
-              icon={Send}
-              href="/send"
-              color="from-yellow-500 to-yellow-600"
-              delay={200}
-            />
-
-            <ModuleCard 
-              title="NFT Creator"
-              desc="Upload assets and mint compressed NFTs on-chain directly from your browser."
-              icon={ImageIcon}
-              href="/mint"
-              color="from-pink-500 to-pink-600"
-              delay={300}
-            />
-
-            <ModuleCard 
-              title="Instant Trade"
-              desc="Simplified CEX interface. Simulate live market orders with one-click execution."
-              icon={TrendingUp}
-              href="/trade"
-              color="from-purple-500 to-purple-600"
-              delay={400}
-            />
-
-            <ModuleCard 
-              title="Subscriptions"
-              desc="SaaS pricing demo. Setup recurring billing plans with smart wallet delegation."
-              icon={CreditCard}
-              href="/subs"
-              color="from-cyan-500 to-cyan-600"
-              delay={500}
-            />
-          </div>
-        </div>
       </div>
     </div>
   );
