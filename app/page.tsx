@@ -1,14 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { ShoppingBag, ArrowLeftRight, Image as ImageIcon, Send, ChevronRight, Zap } from "lucide-react";
+import { 
+  ShoppingBag, 
+  ArrowLeftRight, 
+  Image as ImageIcon, 
+  Send, 
+  ChevronRight, 
+  Zap, 
+  TrendingUp, 
+  CreditCard 
+} from "lucide-react";
 
 // Module Card Component
 function ModuleCard({ title, desc, icon: Icon, href, color }: any) {
   return (
     <Link 
       href={href}
-      className="group relative overflow-hidden bg-cyber-gray border border-white/5 hover:border-white/20 rounded-2xl p-8 transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/50"
+      className="group relative overflow-hidden bg-cyber-gray border border-white/5 hover:border-white/20 rounded-2xl p-8 transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/50 flex flex-col"
     >
       {/* Background Icon Watermark */}
       <div className={`absolute -top-4 -right-4 p-4 opacity-5 group-hover:opacity-10 transition-opacity ${color} transform rotate-12 group-hover:rotate-0 transition-transform duration-700`}>
@@ -22,7 +31,7 @@ function ModuleCard({ title, desc, icon: Icon, href, color }: any) {
           </div>
           <div>
             <h3 className="text-2xl font-bold text-white mb-2">{title}</h3>
-            <p className="text-sm text-cyber-muted leading-relaxed max-w-[90%]">{desc}</p>
+            <p className="text-sm text-cyber-muted leading-relaxed max-w-[95%]">{desc}</p>
           </div>
         </div>
         
@@ -52,17 +61,17 @@ export default function HubPage() {
         </h1>
         <p className="text-cyber-muted text-lg md:text-xl max-w-xl mx-auto leading-relaxed">
           The production-ready checkout suite for Solana. <br/>
-          Experience the speed of <strong>Passkeys</strong> and the magic of <strong>Gasless Transactions</strong>.
+          Experience the speed of <strong>Passkeys</strong> and the magic of <strong>Gasless Transactions</strong> across 6 real-world use cases.
         </p>
       </div>
 
-      {/* The Grid (2x2 Layout) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* The Grid (2 Columns on Tablet, 3 on Large Screens) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         
         {/* 1. Store */}
         <ModuleCard 
           title="Virtual Store"
-          desc="Full e-commerce checkout flow with product details, cart simulation, and instant settlement."
+          desc="E-commerce checkout flow with product details, cart simulation, and instant settlement."
           icon={ShoppingBag}
           href="/store"
           color="text-neon-green"
@@ -93,6 +102,24 @@ export default function HubPage() {
           icon={ImageIcon}
           href="/mint"
           color="text-neon-blue"
+        />
+
+        {/* 5. Trade */}
+        <ModuleCard 
+          title="Instant Trade"
+          desc="Simplified CEX interface. Simulate live market orders with one-click execution."
+          icon={TrendingUp} 
+          href="/trade"
+          color="text-emerald-400"
+        />
+
+        {/* 6. Subscription */}
+        <ModuleCard 
+          title="Subscriptions"
+          desc="SaaS pricing demo. Setup recurring billing plans with smart wallet delegation."
+          icon={CreditCard}
+          href="/subs"
+          color="text-purple-400"
         />
 
       </div>
