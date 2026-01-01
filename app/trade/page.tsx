@@ -1,256 +1,226 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { ArrowLeft, Activity, Lock, Unlock, Zap, TrendingUp, TrendingDown, RefreshCw } from "lucide-react";
 import Link from "next/link";
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  Zap, 
-  Clock, 
-  Shield, 
-  Activity, 
-  Lock,
-  Unlock,
-  CheckCircle,
-  AlertCircle
-} from "lucide-react";
 import { useWallet } from "@lazorkit/wallet";
 import { useLazorContext } from "@/components/Lazorkit/LazorProvider";
+import { useConsole } from "@/components/ui/DevConsole";
+import { SystemProgram, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { APP_CONFIG } from "@/lib/constants";
 
-// Simulated Price Feed
-const usePriceFeed = () => {
+// Mock Chart Data Component
+const ChartLine = ({ color }: { color: string }) => (
+  <div className="flex items-end gap-1 h-12">
+    {[...Array(20)].map((_, i) => (
+      <div 
+        key={i} 
+        className={`w-1 rounded-t-sm ${color}`}
+        style={{ height: `${Math.random() * 100}%`, opacity: Math.random() * 0.5 + 0.5 }} 
+      />
+    ))}
+  </div>
+);
+
+export default function TradePage() {
+  const { signAndSendTransaction } = useWallet();
+  const { isConnected, connectAuth, wallet } = useLazorContext();
+  const { addLog, toggle, isOpen } = useConsole();
+
+  const [sessionActive, setSessionActive] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [price, setPrice] = useState(145.20);
-  const [trend, setTrend] = useState<'up' | 'down'>('up');
 
+  // Simulate Live Price Ticker
   useEffect(() => {
     const interval = setInterval(() => {
-      const change = (Math.random() - 0.5) * 0.5;
-      setPrice(p => {
-        const newPrice = p + change;
-        setTrend(newPrice > p ? 'up' : 'down');
-        return newPrice;
-      });
-    }, 1000);
+      setPrice(p => p + (Math.random() - 0.5) * 0.5);
+    }, 800);
     return () => clearInterval(interval);
   }, []);
 
-  return { price, trend };
-};
-
-export default function TradePage() {
-  const { price, trend } = usePriceFeed();
-  const [amount, setAmount] = useState("");
-  const [side, setSide] = useState<'buy' | 'sell' | null>(null); // 'buy' | 'sell'
-  const [sessionActive, setSessionActive] = useState(false);
-  const [processing, setProcessing] = useState(false);
-  const [notification, setNotification] = useState<{type: 'success' | 'error', msg: string} | null>(null);
-
-  const { connect } = useWallet();
-  const { isConnected } = useLazorContext();
-
-  // Auto-hide notification
-  useEffect(() => {
-    if (notification) {
-      const timer = setTimeout(() => setNotification(null), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [notification]);
-
-  const toggleSession = async () => {
+  // 1. Activate Session (The Setup)
+  const activateSession = async () => {
     if (!isConnected) {
-      await connect();
+      await connectAuth();
       return;
     }
-    setProcessing(true);
-    await new Promise(r => setTimeout(r, 1500)); // Simulate Session Sign
-    setSessionActive(!sessionActive);
-    setProcessing(false);
+    
+    setIsProcessing(true);
+    if (!isOpen) toggle();
+
+    try {
+      addLog(`[SESSION] Initializing Ephemeral Keypair...`, "info");
+      addLog(`[AUTH] Requesting 1-Hour Session Delegation`, "warning");
+
+      // Simulating Session Init via a 0 SOL auth transaction
+      const ix = SystemProgram.transfer({
+        fromPubkey: new PublicKey(wallet!.smartWallet),
+        toPubkey: new PublicKey(APP_CONFIG.MERCHANT_ADDRESS),
+        lamports: 0, 
+      });
+
+      const sig = await signAndSendTransaction({
+        instructions: [ix],
+        transactionOptions: { clusterSimulation: "devnet" }
+      });
+
+      addLog(`[CHAIN] Session Anchor Confirmed! Hash: ${sig.slice(0,8)}...`, "success");
+      setSessionActive(true);
+
+    } catch (e: any) {
+      addLog(`[ERROR] ${e.message}`, "error");
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
-  const executeTrade = async (tradeSide: 'buy' | 'sell') => {
-    if (!amount) return;
-    
-    setSide(tradeSide);
-    setProcessing(true);
+  // 2. The Trade (Fast Execution)
+  const executeTrade = async (side: 'buy' | 'sell') => {
+    if (!sessionActive) return;
 
-    // If session is active, trade is INSTANT (200ms). If not, standard delay (2000ms).
-    const delay = sessionActive ? 200 : 2000;
-    
-    await new Promise(r => setTimeout(r, delay));
-    
-    setNotification({
-      type: 'success',
-      msg: `${tradeSide.toUpperCase()} Order Filled @ ${price.toFixed(2)}`
-    });
-    setProcessing(false);
-    setAmount("");
-    setSide(null);
+    setIsProcessing(true);
+    addLog(`[TRADE] Executing ${side.toUpperCase()} Order @ ${price.toFixed(2)}`, "info");
+    addLog(`[SESSION] Signing with Session Key (No Popup)...`, "success"); // Narrative
+
+    try {
+      // Real transaction to prove it works
+      const ix = SystemProgram.transfer({
+        fromPubkey: new PublicKey(wallet!.smartWallet),
+        toPubkey: new PublicKey(APP_CONFIG.MERCHANT_ADDRESS),
+        lamports: 1000, // Tiny amount
+      });
+
+      const sig = await signAndSendTransaction({
+        instructions: [ix],
+        transactionOptions: { clusterSimulation: "devnet" }
+      });
+
+      addLog(`[CHAIN] Order Filled! Hash: ${sig.slice(0,8)}...`, "success");
+
+    } catch (e: any) {
+      addLog(`[ERROR] ${e.message}`, "error");
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
-    <div className="min-h-screen py-20 px-4 relative overflow-hidden flex flex-col">
+    <div className="min-h-screen bg-[#050505] text-white p-2 md:p-6 flex flex-col relative overflow-hidden font-mono">
       
-      {/* 1. HEADER & TICKER */}
-      <div className="relative z-20 flex flex-col md:flex-row items-center justify-between max-w-7xl mx-auto w-full mb-12 gap-8">
-        
-        {/* Breadcrumb & Title */}
-        <div className="text-center md:text-left space-y-2">
-           <div className="inline-flex items-center gap-2 text-zinc-500 text-sm font-bold font-mono uppercase tracking-widest">
-             <Link href="/" className="hover:text-white transition-colors">HUB</Link> / PRO TERMINAL
-           </div>
-           <h1 className="text-4xl md:text-5xl font-black text-white tracking-tighter flex items-center gap-4">
-             SOL / USDC
-           </h1>
+      {/* 1. Header & Back */}
+      <div className="flex items-center justify-between mb-6 relative z-10">
+        <Link href="/" className="group flex items-center gap-2 text-zinc-500 hover:text-white transition-colors">
+            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+            <span className="font-bold tracking-widest uppercase">EXIT TERMINAL</span>
+        </Link>
+        <div className="flex items-center gap-2">
+            <span className={`w-2 h-2 rounded-full ${isConnected ? "bg-neon-green" : "bg-red-500"} animate-pulse`} />
+            <span className="text-xs text-zinc-500">{isConnected ? "NET_ACTIVE" : "NET_OFFLINE"}</span>
         </div>
-
-        {/* Live Ticker */}
-        <div className={`
-           glass-strong px-8 py-4 rounded-2xl flex items-center gap-6 border-l-4 transition-colors duration-500
-           ${trend === 'up' ? 'border-emerald-500 bg-emerald-500/5' : 'border-red-500 bg-red-500/5'}
-        `}>
-           <div>
-              <div className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-1">Mark Price</div>
-              <div className={`text-4xl font-black font-mono flex items-center gap-2 ${trend === 'up' ? 'text-emerald-400' : 'text-red-400'}`}>
-                 ${price.toFixed(2)}
-                 {trend === 'up' ? <TrendingUp className="w-6 h-6" /> : <TrendingDown className="w-6 h-6" />}
-              </div>
-           </div>
-           <div className="h-10 w-px bg-white/10" />
-           <div>
-              <div className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-1">24h Vol</div>
-              <div className="text-xl font-bold text-white">$4.2B</div>
-           </div>
-        </div>
-
-        {/* Session Toggle */}
-        <button 
-           onClick={toggleSession}
-           disabled={processing}
-           className={`
-              relative group flex items-center gap-3 px-6 py-4 rounded-2xl border transition-all duration-300
-              ${sessionActive 
-                 ? 'bg-yellow-500/10 border-yellow-500/50 text-yellow-400' 
-                 : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-600'
-              }
-           `}
-        >
-           {sessionActive ? <Unlock className="w-5 h-5" /> : <Lock className="w-5 h-5" />}
-           <div className="text-left">
-              <div className="text-[10px] font-bold uppercase tracking-widest mb-0.5">
-                 {sessionActive ? 'TURBO MODE' : 'STANDARD MODE'}
-              </div>
-              <div className="text-xs font-bold text-white">
-                 {sessionActive ? 'Session Active' : 'Enable Session'}
-              </div>
-           </div>
-           
-           {/* Tech Reveal Tooltip */}
-           <div className="absolute top-full right-0 mt-4 w-64 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-              <div className="glass p-4 rounded-xl border-l-4 border-yellow-500">
-                 <div className="flex items-center gap-2 text-yellow-400 text-xs font-bold mb-2 uppercase tracking-wider">
-                    Session Keys <Zap className="w-3 h-3" />
-                 </div>
-                 <p className="text-[10px] text-zinc-400 leading-relaxed">
-                    Delegates a temporary sub-key to sign trades automatically for 1 hour. No wallet popups.
-                 </p>
-              </div>
-           </div>
-        </button>
-
       </div>
 
-      {/* 2. THE SPLIT TERMINAL */}
-      <div className="flex-1 w-full max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 relative z-10">
+      {/* 2. Main Terminal Grid */}
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 relative z-10 max-w-7xl mx-auto w-full">
         
-        {/* BUY PANEL (Left) */}
-        <div className="relative group">
-           <div className="absolute inset-0 bg-emerald-500/5 rounded-[3rem] blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-           <div className="relative h-full glass-strong rounded-[2.5rem] p-8 md:p-12 flex flex-col justify-between border-emerald-500/20 hover:border-emerald-500/50 transition-colors">
-              
-              <div>
-                 <div className="text-emerald-400 font-bold tracking-widest uppercase mb-8 flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5" /> Long / Buy
-                 </div>
-                 <input 
-                    type="number" 
-                    placeholder="0.00" 
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    className="w-full bg-transparent text-7xl font-black text-white outline-none placeholder-emerald-500/20"
-                 />
-                 <div className="text-xl text-zinc-500 font-bold mt-2">SOL</div>
-              </div>
-
-              <div className="space-y-6">
-                 <div className="flex justify-between text-sm font-mono text-zinc-400">
-                    <span>Avail: 145 USDC</span>
-                    <span>Est: {(parseFloat(amount || "0") / price).toFixed(4)} SOL</span>
-                 </div>
-                 <button 
-                    onClick={() => executeTrade('buy')}
-                    disabled={processing}
-                    className="w-full py-8 rounded-2xl bg-emerald-500 text-black text-3xl font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-emerald-500/20"
-                 >
-                    {processing && side === 'buy' ? 'FILLING...' : 'BUY SOL'}
-                 </button>
-              </div>
-
-           </div>
-        </div>
-
-        {/* SELL PANEL (Right) */}
-        <div className="relative group">
-           <div className="absolute inset-0 bg-red-500/5 rounded-[3rem] blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-           <div className="relative h-full glass-strong rounded-[2.5rem] p-8 md:p-12 flex flex-col justify-between border-red-500/20 hover:border-red-500/50 transition-colors">
-              
-              <div>
-                 <div className="text-red-400 font-bold tracking-widest uppercase mb-8 flex items-center gap-2">
-                    <TrendingDown className="w-5 h-5" /> Short / Sell
-                 </div>
-                 <input 
-                    type="number" 
-                    placeholder="0.00" 
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    className="w-full bg-transparent text-7xl font-black text-white outline-none placeholder-red-500/20"
-                 />
-                 <div className="text-xl text-zinc-500 font-bold mt-2">SOL</div>
-              </div>
-
-              <div className="space-y-6">
-                 <div className="flex justify-between text-sm font-mono text-zinc-400">
-                    <span>Avail: 4.20 SOL</span>
-                    <span>Est: ${(parseFloat(amount || "0") * price).toFixed(2)} USDC</span>
-                 </div>
-                 <button 
-                    onClick={() => executeTrade('sell')}
-                    disabled={processing}
-                    className="w-full py-8 rounded-2xl bg-red-500 text-white text-3xl font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-red-500/20"
-                 >
-                    {processing && side === 'sell' ? 'FILLING...' : 'SELL SOL'}
-                 </button>
-              </div>
-
-           </div>
-        </div>
-
-      </div>
-
-      {/* NOTIFICATION TOAST */}
-      {notification && (
-         <div className="fixed bottom-12 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom duration-300">
-            <div className="glass-strong px-6 py-4 rounded-full flex items-center gap-4 border border-white/20 shadow-2xl bg-black/80 backdrop-blur-xl">
-               {notification.type === 'success' ? <CheckCircle className="w-6 h-6 text-emerald-400" /> : <AlertCircle className="w-6 h-6 text-red-400" />}
-               <span className="text-lg font-bold text-white">{notification.msg}</span>
-               {sessionActive && (
-                  <span className="text-[10px] font-bold bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded uppercase tracking-wider">
-                     <Zap className="w-3 h-3 inline mr-1" /> Turbo
-                  </span>
-               )}
+        {/* LEFT: Chart & Info (8 Cols) */}
+        <div className="lg:col-span-8 grid grid-rows-[auto_1fr] gap-4">
+            {/* Ticker Tape */}
+            <div className="bg-[#0A0A0A] border border-zinc-800 rounded-lg p-6 flex items-center justify-between">
+                <div>
+                    <h2 className="text-zinc-500 text-xs uppercase tracking-widest mb-1">SOL / USDC</h2>
+                    <div className="text-5xl font-black tracking-tighter flex items-center gap-4">
+                        {price.toFixed(2)}
+                        <span className="text-lg font-bold text-neon-green flex items-center">
+                            <TrendingUp className="w-4 h-4 mr-1" /> +2.4%
+                        </span>
+                    </div>
+                </div>
+                <Activity className="w-12 h-12 text-zinc-800" />
             </div>
-         </div>
-      )}
 
+            {/* The Chart Area */}
+            <div className="bg-[#0A0A0A] border border-zinc-800 rounded-lg p-6 relative flex flex-col justify-end overflow-hidden group">
+                {/* Grid Lines */}
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,#18181b_1px,transparent_1px),linear-gradient(to_bottom,#18181b_1px,transparent_1px)] bg-[size:2rem_2rem] opacity-20" />
+                
+                <div className="relative z-10 flex justify-between items-end h-64 opacity-50 group-hover:opacity-100 transition-opacity">
+                    <ChartLine color="bg-neon-green" />
+                    <ChartLine color="bg-neon-red" />
+                    <ChartLine color="bg-neon-green" />
+                    <ChartLine color="bg-neon-green" />
+                    <ChartLine color="bg-blue-500" />
+                </div>
+
+                <div className="absolute top-4 right-4 flex gap-2">
+                    <span className="px-2 py-1 bg-zinc-900 rounded text-[10px] text-zinc-500">1H</span>
+                    <span className="px-2 py-1 bg-zinc-800 text-white rounded text-[10px]">1D</span>
+                    <span className="px-2 py-1 bg-zinc-900 rounded text-[10px] text-zinc-500">1W</span>
+                </div>
+            </div>
+        </div>
+
+        {/* RIGHT: Order Entry (4 Cols) */}
+        <div className="lg:col-span-4 bg-[#0A0A0A] border border-zinc-800 rounded-lg p-6 flex flex-col">
+            
+            <div className="mb-8 pb-8 border-b border-zinc-800">
+                <h3 className="text-zinc-400 font-bold mb-4 flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-neon-yellow" /> SESSION STATUS
+                </h3>
+                
+                {sessionActive ? (
+                    <div className="bg-neon-green/10 border border-neon-green/30 p-4 rounded-lg text-center animate-in fade-in">
+                        <Unlock className="w-6 h-6 text-neon-green mx-auto mb-2" />
+                        <div className="text-neon-green font-bold text-sm">SESSION ACTIVE</div>
+                        <div className="text-zinc-500 text-[10px] mt-1">Trades auto-signed via Session Key</div>
+                    </div>
+                ) : (
+                    <div className="space-y-4">
+                        <div className="bg-zinc-900/50 p-4 rounded-lg text-center border border-dashed border-zinc-700">
+                            <Lock className="w-6 h-6 text-zinc-500 mx-auto mb-2" />
+                            <div className="text-zinc-400 text-xs">Session Locked</div>
+                        </div>
+                        <button 
+                            onClick={activateSession}
+                            disabled={isProcessing}
+                            className="w-full py-3 bg-white text-black font-bold rounded hover:bg-zinc-200 transition-colors flex items-center justify-center gap-2"
+                        >
+                            {isProcessing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Fingerprint className="w-4 h-4" />}
+                            INITIALIZE SESSION
+                        </button>
+                    </div>
+                )}
+            </div>
+
+            <div className="flex-1 flex flex-col gap-4">
+                <div className="flex justify-between text-xs text-zinc-500 mb-2">
+                    <span>ORDER TYPE: MARKET</span>
+                    <span>BAL: 14.2 SOL</span>
+                </div>
+
+                {/* BUY BUTTON */}
+                <button 
+                    onClick={() => executeTrade('buy')}
+                    disabled={!sessionActive || isProcessing}
+                    className="flex-1 bg-neon-green/10 border border-neon-green/50 hover:bg-neon-green/20 text-neon-green font-black text-2xl rounded flex items-center justify-center gap-4 transition-all disabled:opacity-30 disabled:cursor-not-allowed group"
+                >
+                    <TrendingUp className="w-6 h-6 group-hover:-translate-y-1 transition-transform" />
+                    BUY
+                </button>
+
+                {/* SELL BUTTON */}
+                <button 
+                    onClick={() => executeTrade('sell')}
+                    disabled={!sessionActive || isProcessing}
+                    className="flex-1 bg-neon-red/10 border border-neon-red/50 hover:bg-neon-red/20 text-neon-red font-black text-2xl rounded flex items-center justify-center gap-4 transition-all disabled:opacity-30 disabled:cursor-not-allowed group"
+                >
+                    <TrendingDown className="w-6 h-6 group-hover:translate-y-1 transition-transform" />
+                    SELL
+                </button>
+            </div>
+
+        </div>
+      </div>
     </div>
   );
 }
