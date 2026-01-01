@@ -1,142 +1,93 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, ReactNode, useMemo } from "react";
-// We only import the Provider and hook. We will be very careful with the hook.
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+// We import the real SDK provider
 import { LazorkitProvider as SDKProvider, useWallet } from "@lazorkit/wallet";
-import { Connection } from "@solana/web3.js";
+import { APP_CONFIG, STORAGE_KEYS } from "@/lib/constants";
 
-// --- CONFIGURATION ---
-const RPC_URL = "https://api.devnet.solana.com";
-const PORTAL_URL = "https://portal.lazor.sh";
-
-// --- TYPES ---
-interface WalletData {
-  smartWallet: string;
-  credentialId: string;
-  passkeyPubkey?: any;
-}
-
+// Define the shape of our context
 interface LazorContextType {
+  wallet: { smartWallet: string; credentialId: string } | null;
   isConnected: boolean;
-  wallet: WalletData | null;
-  connection: Connection;
-  signAndSend: (instructions: any[]) => Promise<string>;
+  isLoading: boolean;
   connectAuth: () => Promise<void>;
   disconnectAuth: () => Promise<void>;
 }
 
 const LazorContext = createContext<LazorContextType | undefined>(undefined);
 
-// --- INNER LOGIC COMPONENT ---
-function LazorLogic({ children }: { children: ReactNode }) {
-  // 🚨 CRITICAL FIX: Only destructure METHODS. Never destructure state properties eagerly.
-  const { connect, disconnect, signAndSendTransaction } = useWallet();
+// Internal component to handle hooks inside the SDK Provider
+function LazorAuthLogic({ children }: { children: React.ReactNode }) {
+  // Get methods from the REAL SDK
+  const { connect, disconnect, wallet: sdkWallet } = useWallet();
   
-  // We mirror the wallet state locally to avoid hydration mismatches
-  const [localWallet, setLocalWallet] = useState<WalletData | null>(null);
-  
-  const connection = useMemo(() => new Connection(RPC_URL), []);
+  const [localWallet, setLocalWallet] = useState<{ smartWallet: string; credentialId: string } | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // 1. SAFE CONNECT
+  // 1. Load Session on Mount
+  useEffect(() => {
+    const stored = localStorage.getItem(STORAGE_KEYS.WALLET_INFO);
+    if (stored) {
+      setLocalWallet(JSON.parse(stored));
+    }
+    setIsLoading(false);
+  }, []);
+
+  // 2. Sync SDK state to Local State (Safety Net)
+  useEffect(() => {
+    if (sdkWallet && sdkWallet.smartWallet) {
+      const walletData = {
+        smartWallet: sdkWallet.smartWallet,
+        credentialId: sdkWallet.credentialId,
+      };
+      setLocalWallet(walletData);
+      localStorage.setItem(STORAGE_KEYS.WALLET_INFO, JSON.stringify(walletData));
+    }
+  }, [sdkWallet]);
+
+  // 3. Wrapper Actions
   const connectAuth = async () => {
     try {
-      console.log("🔵 Initializing Passkey Auth...");
-      
-      // We assume the SDK connect() returns the wallet info object.
-      // We do NOT rely on the hook's state updating automatically during this render cycle.
-      const walletInfo = await connect({ feeMode: 'paymaster' });
-      
-      if (walletInfo && walletInfo.smartWallet) {
-        console.log("✅ Auth Success:", walletInfo);
-        setLocalWallet({
-          smartWallet: walletInfo.smartWallet,
-          credentialId: walletInfo.credentialId,
-          passkeyPubkey: walletInfo.passkeyPubkey
-        });
-      }
-    } catch (e: any) {
-      console.error("🔴 Connection Failed:", e);
-      if (!e.message?.includes("cancelled")) {
-        alert(`Passkey Error: ${e.message}`);
-      }
-    }
-  };
-
-  // 2. SAFE DISCONNECT
-  const disconnectAuth = async () => {
-    try {
-      await disconnect();
-      setLocalWallet(null);
-      
-      // Safe storage clearing
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem("lazor_wallet_info");
-        window.location.reload();
-      }
+      // Per docs: trigger connection with paymaster preference
+      await connect({ feeMode: 'paymaster' });
     } catch (e) {
-      console.error("Disconnect error:", e);
+      console.error("Auth failed:", e);
+      throw e;
     }
   };
 
-  // 3. SAFE SIGN & SEND
-  const signAndSend = async (instructions: any[]) => {
-    if (!localWallet) throw new Error("Wallet not connected");
-
-    console.log("🟡 Requesting Paymaster Sponsorship...");
-    
-    const payload = {
-      instructions,
-      transactionOptions: {
-        feeToken: 'USDC', 
-        computeUnitLimit: 500_000,
-        clusterSimulation: 'devnet' as const
-      }
-    };
-
-    const signature = await signAndSendTransaction(payload);
-    console.log("🟢 Transaction Signed & Sent:", signature);
-    return signature;
+  const disconnectAuth = async () => {
+    await disconnect();
+    setLocalWallet(null);
+    localStorage.removeItem(STORAGE_KEYS.WALLET_INFO);
   };
-
-  // 4. AUTO-RECONNECT (Optional/Safe)
-  // We can try to silently connect on mount if we trust the SDK's cache,
-  // but for this demo, let's keep it manual to be 100% crash-proof.
-  // If you want persistence, we can add it later.
-
-  const contextValue = useMemo(() => ({
-    isConnected: !!localWallet, 
-    wallet: localWallet,
-    connection,
-    signAndSend,
-    connectAuth,
-    disconnectAuth
-  }), [localWallet, connection]);
 
   return (
-    <LazorContext.Provider value={contextValue}>
+    <LazorContext.Provider
+      value={{
+        wallet: localWallet,
+        isConnected: !!localWallet,
+        isLoading,
+        connectAuth,
+        disconnectAuth,
+      }}
+    >
       {children}
     </LazorContext.Provider>
   );
 }
 
-// --- MAIN PROVIDER WRAPPER ---
-export function LazorProvider({ children }: { children: ReactNode }) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
-    return <div className="min-h-screen bg-[#050505]" />;
-  }
-
+// The Main Provider Wrapper
+export function LazorProvider({ children }: { children: React.ReactNode }) {
   return (
-    <SDKProvider 
-      rpcUrl={RPC_URL}
-      portalUrl={PORTAL_URL}
+    <SDKProvider
+      rpcUrl={APP_CONFIG.RPC_URL}
+      portalUrl={APP_CONFIG.PORTAL_URL}
+      paymasterConfig={{
+        paymasterUrl: APP_CONFIG.PAYMASTER_URL,
+      }}
     >
-      <LazorLogic>{children}</LazorLogic>
+      <LazorAuthLogic>{children}</LazorAuthLogic>
     </SDKProvider>
   );
 }
