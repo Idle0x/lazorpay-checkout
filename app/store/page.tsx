@@ -8,9 +8,8 @@ import {
 import { useLazorContext } from "@/components/Lazorkit/LazorProvider";
 import { SystemProgram, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
 
-// FIX: Use a string constant. Do NOT call new PublicKey() here.
-// Using a known valid Devnet address to be safe.
-const MERCHANT_ADDRESS_STRING = "4Nd1mK2gq5H6fZ9F5YpYw1b5Z1tcHTfb3e8DqRLVQjax";
+// ✅ YOUR ADDRESS (Stored safely as a string)
+const MERCHANT_ADDRESS_STRING = "FvyYz9tqnCmG4XYrRKFG4fCrsUwK7T3KJsd97MFWGSiy";
 
 // --- TYPES ---
 type Product = {
@@ -70,11 +69,10 @@ export default function StorePage() {
 
       setProcessing(true);
 
-      // FIX: Instantiate PublicKey inside the handler (Safe)
-      // FIX: Use Math.floor to ensure integer lamports
+      // ✅ SAFE CONVERSION: We only create the PublicKey object HERE, when needed.
       const instruction = SystemProgram.transfer({
         fromPubkey: new PublicKey(wallet.smartWallet),
-        toPubkey: new PublicKey(MERCHANT_ADDRESS_STRING),
+        toPubkey: new PublicKey(MERCHANT_ADDRESS_STRING), 
         lamports: Math.floor(product.price * LAMPORTS_PER_SOL),
       });
 
@@ -98,7 +96,7 @@ export default function StorePage() {
   return (
     <div className="min-h-screen py-20 px-4 relative overflow-y-auto overflow-x-hidden flex flex-col items-center">
       
-      {/* 1. HEADER & BACK BUTTON */}
+      {/* HEADER */}
       <div className={`w-full max-w-7xl flex items-center justify-between mb-16 transition-all duration-500 ${activeId ? 'opacity-0 translate-y-[-50px] pointer-events-none' : 'opacity-100'}`}>
         <Link href="/" className="group flex items-center gap-2 text-zinc-500 hover:text-white transition-colors">
            <div className="p-2 rounded-full border border-zinc-800 group-hover:border-red-500/50 transition-colors">
@@ -112,7 +110,7 @@ export default function StorePage() {
         </h1>
       </div>
 
-      {/* 2. THE CARDS */}
+      {/* CARDS */}
       <div className="max-w-6xl w-full flex flex-col lg:flex-row items-center justify-center gap-8 perspective-[1000px]">
         
         {PRODUCTS.map((product) => {
@@ -223,7 +221,7 @@ export default function StorePage() {
                       )}
                     </div>
 
-                    {/* Tech Spec */}
+                    {/* TECH SPEC */}
                     <div className="hidden md:block absolute right-12 bottom-40 text-right pointer-events-none">
                         <div className="inline-block glass-strong p-6 rounded-2xl bg-black/20 border-l-4 border-emerald-500 backdrop-blur-md">
                            <div className="flex items-center justify-end gap-2 text-emerald-400 text-sm font-bold mb-2 uppercase tracking-wider">
