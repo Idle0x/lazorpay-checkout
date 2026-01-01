@@ -12,14 +12,14 @@ import {
   Fingerprint,
   Code2
 } from "lucide-react";
-import { useWallet } from "@lazorkit/wallet";
 import { useLazorContext } from "@/components/Lazorkit/LazorProvider";
 
 // --- COMPONENTS ---
 
-// 1. The "Stone & Sand" Pill Module (Black Text, No Borders)
+// 1. The "Stone & Sand" Pill Module (Black Text, Clean Look)
 function PillModule({ title, desc, icon: Icon, href, align, index }: any) {
   const isLeft = align === 'left';
+  // Logic: Even index = Stone Color, Odd index = Sand Color
   const pillColor = index % 2 === 0 ? 'bg-[#dcdff0]' : 'bg-[#ccccb1]';
   const hoverColor = index % 2 === 0 ? 'hover:bg-[#c4c7d9]' : 'hover:bg-[#b8b89f]';
   
@@ -58,7 +58,7 @@ function PillModule({ title, desc, icon: Icon, href, align, index }: any) {
   );
 }
 
-// 2. Tech Reveal (Kept as is)
+// 2. Tech Reveal (Shows actual SDK code)
 function TechReveal() {
   return (
     <div className="hidden md:block absolute right-[-20px] top-1/2 -translate-y-1/2 translate-x-full pl-8 opacity-0 group-hover:opacity-100 transition-all duration-500">
@@ -67,9 +67,9 @@ function TechReveal() {
           <Code2 className="w-3 h-3" /> LazorKit SDK
         </div>
         <pre className="text-[10px] font-mono text-white/70">
-{`await connect({
-  passkey: true,
-  chain: "solana"
+{`// 1. Trigger Passkey
+await connect({
+  feeMode: 'paymaster'
 });`}
         </pre>
       </div>
@@ -78,24 +78,8 @@ function TechReveal() {
 }
 
 export default function HubPage() {
-  const { connect } = useWallet();
-  const { isConnected, wallet, saveSession } = useLazorContext();
-
-  const handleConnect = async () => {
-    try {
-      const data = await connect();
-      if (data?.smartWallet) {
-        saveSession({
-          credentialId: data.credentialId || "",
-          passkeyPubkey: data.passkeyPubkey ? JSON.stringify(data.passkeyPubkey) : "",
-          smartWallet: data.smartWallet,
-          walletDevice: data.walletDevice || "web"
-        });
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  };
+  // USE REAL CONTEXT
+  const { connectAuth, isConnected } = useLazorContext();
 
   const modules = [
     {
@@ -151,13 +135,13 @@ export default function HubPage() {
             <span className="text-xs font-bold tracking-[0.2em] text-white">V2.0 ONLINE</span>
           </div>
           
-          {/* FIXED: Reverted "PAY" to vibrant Neon Gradient */}
+          {/* NEON PAY GRADIENT */}
           <h1 className="text-7xl md:text-9xl font-black text-white tracking-tighter leading-none text-glow">
             LAZOR<span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-cyan-500 to-purple-500 animate-gradient">PAY</span>
           </h1>
           
           <p className="text-xl text-white/50 font-light tracking-wide max-w-2xl mx-auto">
-            THE PRODUCTION SUITE FOR SOLANA
+            THE PRODUCTION SUITE FOR SOLANA PASSKEYS
           </p>
         </div>
 
@@ -173,13 +157,13 @@ export default function HubPage() {
           ))}
         </div>
 
-        {/* CONNECT BUTTON */}
+        {/* CONNECT BUTTON (REAL LOGIC) */}
         <div className="flex justify-center pt-20 pb-10">
           <div className="relative group">
             <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full blur opacity-40 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
             
             <button 
-              onClick={handleConnect}
+              onClick={connectAuth}
               disabled={isConnected}
               className="relative btn-primary px-12 py-6 text-2xl rounded-full flex items-center gap-4 hover:scale-105 transition-transform"
             >
