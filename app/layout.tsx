@@ -1,3 +1,4 @@
+import "./polyfills"; // <--- MUST BE THE FIRST LINE
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
@@ -19,7 +20,6 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        {/* WRAP THE APP WITH REAL SDK LOGIC */}
         <LazorProvider>
           <GlobalHeader />
           <main className="min-h-screen bg-[#050505] text-white overflow-x-hidden">
