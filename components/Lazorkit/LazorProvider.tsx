@@ -1,13 +1,14 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
-// We import these, but the polyfill in layout.tsx protects us now
+import React, { createContext, useContext, useEffect, useState, ReactNode, useMemo } from "react";
 import { LazorkitProvider as SDKProvider, useWallet } from "@lazorkit/wallet";
 import { Connection } from "@solana/web3.js";
 
+// --- CONFIGURATION ---
 const RPC_URL = "https://api.devnet.solana.com";
 const PORTAL_URL = "https://portal.lazor.sh";
 
+// --- CONTEXT DEFINITIONS ---
 interface LazorContextType {
   isConnected: boolean;
   wallet: { smartWallet: string; credentialId: string } | null;
@@ -19,9 +20,12 @@ interface LazorContextType {
 
 const LazorContext = createContext<LazorContextType | undefined>(undefined);
 
+// --- INNER LOGIC COMPONENT ---
 function LazorLogic({ children }: { children: ReactNode }) {
   const { connect, disconnect, wallet, isConnected, signAndSendTransaction } = useWallet();
-  const [connection] = useState(() => new Connection(RPC_URL));
+  
+  // OPTIMIZATION: Memoize connection to prevent re-creation on every render
+  const connection = useMemo(() => new Connection(RPC_URL), []);
 
   const connectAuth = async () => {
     try {
@@ -29,7 +33,6 @@ function LazorLogic({ children }: { children: ReactNode }) {
       await connect({ feeMode: 'paymaster' });
     } catch (e: any) {
       console.error("🔴 Connection Failed:", e);
-      // Only alert on actual errors, not user cancellation
       if (!e.message?.includes("cancelled")) {
         alert(`Passkey Error: ${e.message}`);
       }
@@ -37,9 +40,16 @@ function LazorLogic({ children }: { children: ReactNode }) {
   };
 
   const disconnectAuth = async () => {
-    await disconnect();
-    localStorage.clear();
-    window.location.reload();
+    try {
+      await disconnect();
+      // FIX: Only access window/localStorage on the client
+      if (typeof window !== 'undefined') {
+        localStorage.clear();
+        window.location.reload();
+      }
+    } catch (e) {
+      console.error("Disconnect error:", e);
+    }
   };
 
   const signAndSend = async (instructions: any[]) => {
@@ -61,37 +71,38 @@ function LazorLogic({ children }: { children: ReactNode }) {
     return signature;
   };
 
+  // OPTIMIZATION: Memoize context value
+  const contextValue = useMemo(() => ({
+    isConnected, 
+    wallet: wallet ? { 
+      smartWallet: wallet.smartWallet,
+      credentialId: wallet.credentialId 
+    } : null,
+    connection,
+    signAndSend,
+    connectAuth,
+    disconnectAuth
+  }), [isConnected, wallet, connection]);
+
   return (
-    <LazorContext.Provider value={{ 
-      isConnected, 
-      wallet: wallet ? { 
-        smartWallet: wallet.smartWallet,
-        credentialId: wallet.credentialId 
-      } : null,
-      connection,
-      signAndSend,
-      connectAuth,
-      disconnectAuth
-    }}>
+    <LazorContext.Provider value={contextValue}>
       {children}
     </LazorContext.Provider>
   );
 }
 
+// --- MAIN PROVIDER WRAPPER ---
 export function LazorProvider({ children }: { children: ReactNode }) {
-  const [isMounted, setIsMounted] = useState(false);
+  // FIX: Hydration Guard to prevent SSR crashes
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setIsMounted(true);
+    setMounted(true);
   }, []);
 
-  if (!isMounted) {
-    return (
-        <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center space-y-4">
-            <div className="w-8 h-8 border-2 border-emerald-500 rounded-full animate-spin border-t-transparent" />
-            <div className="text-emerald-500 text-xs font-mono tracking-widest animate-pulse">INITIALIZING SECURE ENCLAVE</div>
-        </div>
-    );
+  if (!mounted) {
+    // Return empty fragment or loader during SSR to avoid mismatch
+    return <div className="min-h-screen bg-[#050505]" />;
   }
 
   return (
