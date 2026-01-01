@@ -1,15 +1,15 @@
-import "./polyfills"; // <--- MUST BE THE FIRST LINE
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { LazorProvider } from "@/components/Lazorkit/LazorProvider";
-import { GlobalHeader } from "@/components/ui/GlobalHeader";
+import { ConsoleProvider } from "@/components/ui/DevConsole"; 
+import { GlobalHeader } from "@/components/ui/GlobalHeader"; 
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "LazorPay | Checkout Suite",
-  description: "The Production Suite for Solana Passkey Payments",
+  title: "LazorPay Checkout",
+  description: "The Invisible Wallet Experience",
 };
 
 export default function RootLayout({
@@ -20,12 +20,22 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <LazorProvider>
-          <GlobalHeader />
-          <main className="min-h-screen bg-[#050505] text-white overflow-x-hidden">
-            {children}
-          </main>
-        </LazorProvider>
+        {/* 1. Outer Layer: Developer Console (X-Ray) */}
+        <ConsoleProvider>
+          
+          {/* 2. Inner Layer: Auth & Logic */}
+          <LazorProvider>
+            
+            {/* 3. Navigation Header */}
+            <GlobalHeader />
+            
+            {/* 4. Main Content */}
+            <main className="min-h-screen bg-black text-white selection:bg-neon-green selection:text-black">
+               {children}
+            </main>
+            
+          </LazorProvider>
+        </ConsoleProvider>
       </body>
     </html>
   );
