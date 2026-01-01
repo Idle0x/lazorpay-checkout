@@ -1,19 +1,13 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
+// We import these, but the polyfill in layout.tsx protects us now
 import { LazorkitProvider as SDKProvider, useWallet } from "@lazorkit/wallet";
 import { Connection } from "@solana/web3.js";
 
-// --- 1. GLOBAL POLYFILL FOR SOLANA ---
-if (typeof window !== "undefined") {
-  window.Buffer = window.Buffer || require("buffer").Buffer;
-}
-
-// --- CONFIGURATION ---
 const RPC_URL = "https://api.devnet.solana.com";
 const PORTAL_URL = "https://portal.lazor.sh";
 
-// --- CONTEXT DEFINITIONS ---
 interface LazorContextType {
   isConnected: boolean;
   wallet: { smartWallet: string; credentialId: string } | null;
@@ -25,7 +19,6 @@ interface LazorContextType {
 
 const LazorContext = createContext<LazorContextType | undefined>(undefined);
 
-// --- INNER LOGIC COMPONENT ---
 function LazorLogic({ children }: { children: ReactNode }) {
   const { connect, disconnect, wallet, isConnected, signAndSendTransaction } = useWallet();
   const [connection] = useState(() => new Connection(RPC_URL));
@@ -36,9 +29,9 @@ function LazorLogic({ children }: { children: ReactNode }) {
       await connect({ feeMode: 'paymaster' });
     } catch (e: any) {
       console.error("🔴 Connection Failed:", e);
-      // Don't alert on user cancel, only on real errors
-      if (!e.message.includes("User cancelled")) {
-         alert(`Passkey Error: ${e.message}`);
+      // Only alert on actual errors, not user cancellation
+      if (!e.message?.includes("cancelled")) {
+        alert(`Passkey Error: ${e.message}`);
       }
     }
   };
@@ -85,7 +78,6 @@ function LazorLogic({ children }: { children: ReactNode }) {
   );
 }
 
-// --- MAIN PROVIDER WRAPPER ---
 export function LazorProvider({ children }: { children: ReactNode }) {
   const [isMounted, setIsMounted] = useState(false);
 
@@ -93,12 +85,11 @@ export function LazorProvider({ children }: { children: ReactNode }) {
     setIsMounted(true);
   }, []);
 
-  // Prevent SSR Hydration Mismatch
   if (!isMounted) {
     return (
-        <div className="min-h-screen bg-[#050505] flex items-center justify-center">
-            {/* Optional: A simple loading spinner to avoid white flash */}
+        <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center space-y-4">
             <div className="w-8 h-8 border-2 border-emerald-500 rounded-full animate-spin border-t-transparent" />
+            <div className="text-emerald-500 text-xs font-mono tracking-widest animate-pulse">INITIALIZING SECURE ENCLAVE</div>
         </div>
     );
   }
