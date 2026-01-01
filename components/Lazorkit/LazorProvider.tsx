@@ -6,13 +6,12 @@ import { Connection } from "@solana/web3.js";
 
 // --- CONFIGURATION ---
 const RPC_URL = "https://api.devnet.solana.com";
-// const PAYMASTER_URL = "https://kora.devnet.lazorkit.com"; // Standard
 const PORTAL_URL = "https://portal.lazor.sh";
 
 // --- CONTEXT DEFINITIONS ---
 interface LazorContextType {
   isConnected: boolean;
-  wallet: { smartWallet: string } | null;
+  wallet: { smartWallet: string; credentialId: string } | null;
   connection: Connection;
   signAndSend: (instructions: any[]) => Promise<string>;
   connectAuth: () => Promise<void>;
@@ -21,45 +20,50 @@ interface LazorContextType {
 
 const LazorContext = createContext<LazorContextType | undefined>(undefined);
 
-// --- INNER COMPONENT (Accesses SDK Hooks) ---
+// --- INNER LOGIC COMPONENT ---
+// This sits inside SDKProvider so it can access useWallet()
 function LazorLogic({ children }: { children: ReactNode }) {
   const { connect, disconnect, wallet, isConnected, signAndSendTransaction } = useWallet();
   const [connection] = useState(() => new Connection(RPC_URL));
 
-  // 1. Handle Connect
+  // 1. ROBUST CONNECT
   const connectAuth = async () => {
     try {
       console.log("🔵 Initializing Passkey Auth...");
-      await connect({ feeMode: 'paymaster' }); // Enable Gasless by default
-    } catch (e) {
+      // We assume feeMode 'paymaster' is the default desire for this demo
+      const walletData = await connect({ feeMode: 'paymaster' });
+      
+      console.log("⚡ SDK Connection Success:", walletData);
+    } catch (e: any) {
       console.error("🔴 Connection Failed:", e);
-      alert("Passkey connection failed. Ensure you are on HTTPS or Localhost.");
+      alert(`Passkey Error: ${e.message}`);
     }
   };
 
-  // 2. Handle Disconnect
+  // 2. ROBUST DISCONNECT
   const disconnectAuth = async () => {
     await disconnect();
-    // Optional: Clear local storage if needed
-    localStorage.removeItem("lazor_session"); 
+    localStorage.clear(); // Nuclear option for demo to ensure clean slate
+    window.location.reload();
   };
 
-  // 3. Wrapper for Transactions (The "Magic" Function)
+  // 3. ROBUST SIGN & SEND
   const signAndSend = async (instructions: any[]) => {
     if (!wallet) throw new Error("Wallet not connected");
 
     console.log("🟡 Requesting Paymaster Sponsorship...");
     
-    // The Core SDK Call
-    const signature = await signAndSendTransaction({
+    // The exact payload structure from your working snippet
+    const payload = {
       instructions,
       transactionOptions: {
-        feeToken: 'USDC', // Requesting fee sponsorship (simulated on Devnet)
+        feeToken: 'USDC', 
         computeUnitLimit: 500_000,
-        clusterSimulation: 'devnet'
+        clusterSimulation: 'devnet' as const // TypeScript cast
       }
-    });
+    };
 
+    const signature = await signAndSendTransaction(payload);
     console.log("🟢 Transaction Signed & Sent:", signature);
     return signature;
   };
@@ -67,7 +71,11 @@ function LazorLogic({ children }: { children: ReactNode }) {
   return (
     <LazorContext.Provider value={{ 
       isConnected, 
-      wallet: wallet ? { smartWallet: wallet.smartWallet } : null,
+      // Safely mapping the wallet object
+      wallet: wallet ? { 
+        smartWallet: wallet.smartWallet,
+        credentialId: wallet.credentialId 
+      } : null,
       connection,
       signAndSend,
       connectAuth,
@@ -78,23 +86,21 @@ function LazorLogic({ children }: { children: ReactNode }) {
   );
 }
 
-// --- MAIN PROVIDER WRAPPER ---
+// --- MAIN EXPORTED PROVIDER ---
 export function LazorProvider({ children }: { children: ReactNode }) {
   return (
     <SDKProvider 
       rpcUrl={RPC_URL}
       portalUrl={PORTAL_URL}
-      // FIX: The Web SDK uses 'paymaster' or simply configures it internally via the portal
-      // Removing explicit paymaster config props that cause type errors on the web version
-      // The 'feeMode: paymaster' in connect() handles the logic
-      isDebug={true} 
+      // REMOVED: isDebug, configPaymaster (These caused the build fails)
+      // The Web SDK infers paymaster config from the portal or defaults
     >
       <LazorLogic>{children}</LazorLogic>
     </SDKProvider>
   );
 }
 
-// --- CUSTOM HOOK ---
+// --- HOOK EXPORT ---
 export function useLazorContext() {
   const context = useContext(LazorContext);
   if (!context) throw new Error("useLazorContext must be used within LazorProvider");
