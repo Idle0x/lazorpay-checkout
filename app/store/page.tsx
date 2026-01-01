@@ -1,259 +1,109 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Link from "next/link";
-import { 
-  Zap, Cpu, Ticket, X, CheckCircle, Loader2, Code2, Fingerprint, ArrowRight, ArrowLeft, ExternalLink
-} from "lucide-react";
-import { useLazorContext } from "@/components/Lazorkit/LazorProvider";
-import { SystemProgram, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
-
-// ✅ YOUR ADDRESS (Stored safely as a string)
-const MERCHANT_ADDRESS_STRING = "FvyYz9tqnCmG4XYrRKFG4fCrsUwK7T3KJsd97MFWGSiy";
-
-// --- TYPES ---
-type Product = {
-  id: number;
-  name: string;
-  category: string;
-  price: number;
-  color: string;
-  textColor: string;
-  icon: any;
-};
-
-// --- DATA ---
-const PRODUCTS: Product[] = [
-  {
-    id: 1,
-    name: "NEURAL LINK",
-    category: "HARDWARE",
-    price: 0.01,
-    color: "bg-gradient-to-br from-zinc-700 to-zinc-900 border-zinc-600",
-    textColor: "text-white",
-    icon: Cpu
-  },
-  {
-    id: 2,
-    name: "DEV CREDITS",
-    category: "DIGITAL ASSET",
-    price: 0.05,
-    color: "bg-gradient-to-br from-blue-600 to-violet-600 border-blue-400",
-    textColor: "text-white",
-    icon: Zap
-  },
-  {
-    id: 3,
-    name: "VIP ACCESS",
-    category: "EVENT TICKET",
-    price: 0.1,
-    color: "bg-[#e5e5e5] border-zinc-400",
-    textColor: "text-zinc-900",
-    icon: Ticket
-  }
-];
+import { CheckoutWidget } from "@/components/ui/CheckoutWidget"; // The engine we built
+import { Package, Star, ShieldCheck, Zap, ArrowLeft, BrainCircuit } from "lucide-react";
 
 export default function StorePage() {
-  const [activeId, setActiveId] = useState<number | null>(null);
-  const [processing, setProcessing] = useState(false);
-  const [txSignature, setTxSignature] = useState<string | null>(null);
-  
-  const { isConnected, wallet, connectAuth, signAndSend } = useLazorContext();
-
-  const handlePurchase = async (product: Product) => {
-    try {
-      if (!isConnected || !wallet) {
-        await connectAuth();
-        return;
-      }
-
-      setProcessing(true);
-
-      // ✅ SAFE CONVERSION: We only create the PublicKey object HERE, when needed.
-      const instruction = SystemProgram.transfer({
-        fromPubkey: new PublicKey(wallet.smartWallet),
-        toPubkey: new PublicKey(MERCHANT_ADDRESS_STRING), 
-        lamports: Math.floor(product.price * LAMPORTS_PER_SOL),
-      });
-
-      const sig = await signAndSend([instruction]);
-      setTxSignature(sig);
-
-    } catch (e) {
-      console.error("Purchase Failed:", e);
-      alert("Transaction failed. See console.");
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  const closeActive = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setActiveId(null);
-    setTxSignature(null);
-  };
-
   return (
-    <div className="min-h-screen py-20 px-4 relative overflow-y-auto overflow-x-hidden flex flex-col items-center">
+    <div className="min-h-screen bg-black text-white p-4 md:p-8 flex flex-col relative overflow-hidden">
       
-      {/* HEADER */}
-      <div className={`w-full max-w-7xl flex items-center justify-between mb-16 transition-all duration-500 ${activeId ? 'opacity-0 translate-y-[-50px] pointer-events-none' : 'opacity-100'}`}>
-        <Link href="/" className="group flex items-center gap-2 text-zinc-500 hover:text-white transition-colors">
-           <div className="p-2 rounded-full border border-zinc-800 group-hover:border-red-500/50 transition-colors">
-             <ArrowLeft className="w-5 h-5 text-red-500" />
-           </div>
-           <span className="text-sm font-bold font-mono uppercase tracking-widest">Back to Hub</span>
+      {/* 1. Background Grid (Subtle) */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#18181b_1px,transparent_1px),linear-gradient(to_bottom,#18181b_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none z-0" />
+
+      {/* 2. Navigation / Back Button */}
+      <div className="relative z-10 mb-12">
+        <Link href="/" className="group inline-flex items-center gap-2 text-cyber-muted hover:text-white transition-colors">
+            <div className="p-2 rounded-full border border-cyber-border group-hover:border-neon-red/50 transition-colors bg-black">
+                <ArrowLeft className="w-5 h-5 text-neon-red" />
+            </div>
+            <span className="text-sm font-bold font-mono uppercase tracking-widest group-hover:text-neon-red transition-colors">
+                Back to Hub
+            </span>
         </Link>
-        
-        <h1 className="text-5xl md:text-6xl font-black text-white tracking-tighter text-right">
-          SELECT ARTIFACT
-        </h1>
       </div>
 
-      {/* CARDS */}
-      <div className="max-w-6xl w-full flex flex-col lg:flex-row items-center justify-center gap-8 perspective-[1000px]">
+      <div className="relative z-10 max-w-6xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 items-start">
         
-        {PRODUCTS.map((product) => {
-          const isActive = activeId === product.id;
-          if (activeId !== null && !isActive) return null;
-
-          return (
-            <div
-              key={product.id}
-              onClick={() => !isActive && setActiveId(product.id)}
-              className={`
-                relative transition-all duration-700 ease-[cubic-bezier(0.25,0.8,0.25,1)]
-                ${isActive 
-                  ? 'fixed top-0 left-0 w-full h-full z-50 flex items-center justify-center bg-black/95 backdrop-blur-xl p-4' 
-                  : 'w-72 h-96 cursor-pointer hover:scale-[1.05] hover:-translate-y-4'
-                }
-              `}
-            >
-              <div className={`
-                ${isActive ? 'w-full max-w-2xl h-auto min-h-[600px] text-left p-10' : 'w-full h-full flex flex-col items-center justify-center text-center p-6'}
-                rounded-[2rem] overflow-hidden relative shadow-2xl ${product.color} border
-                transition-all duration-700
-              `}>
+        {/* LEFT COLUMN: The Product Visuals */}
+        <div className="space-y-8 animate-in slide-in-from-left duration-700">
+            
+            {/* The Image Container */}
+            <div className="relative aspect-square w-full max-w-md mx-auto lg:mx-0 rounded-3xl overflow-hidden border border-cyber-border bg-cyber-gray/30 group">
+                {/* Dynamic Gradient Background */}
+                <div className="absolute inset-0 bg-gradient-to-br from-neon-green/10 via-transparent to-neon-blue/10 group-hover:opacity-100 opacity-50 transition-opacity duration-700" />
                 
-                {/* Close Button */}
-                {isActive && (
-                  <button 
-                    onClick={closeActive}
-                    className="absolute top-8 right-8 p-3 rounded-full bg-black/10 hover:bg-black/20 transition-colors z-50"
-                  >
-                    <X className={`w-8 h-8 ${product.textColor}`} />
-                  </button>
-                )}
-
-                {/* IDLE CONTENT */}
-                {!isActive && (
-                  <div className="space-y-6">
-                    <div className={`mx-auto w-20 h-20 rounded-full flex items-center justify-center bg-black/10`}>
-                       <product.icon className={`w-10 h-10 ${product.textColor}`} />
+                {/* The Product Icon */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="relative">
+                        <div className="absolute inset-0 bg-neon-green/20 blur-3xl rounded-full" />
+                        <BrainCircuit className="relative w-40 h-40 text-neon-green drop-shadow-[0_0_30px_rgba(16,185,129,0.6)]" />
                     </div>
-                    <div>
-                      <h2 className={`text-3xl font-black leading-tight mb-2 ${product.textColor}`}>
-                        {product.name}
-                      </h2>
-                      <div className={`inline-block px-3 py-1 rounded-full text-[10px] font-bold tracking-[0.2em] uppercase bg-black/10 ${product.textColor}`}>
-                        {product.category}
-                      </div>
+                </div>
+
+                {/* Badges */}
+                <div className="absolute top-6 left-6 flex flex-col gap-2">
+                    <div className="bg-black/80 backdrop-blur border border-neon-green/30 px-4 py-2 rounded-full text-xs font-mono text-neon-green flex items-center gap-2 shadow-lg">
+                        <Star className="w-3 h-3 fill-neon-green" />
+                        <span>BESTSELLER</span>
                     </div>
-                  </div>
-                )}
-
-                {/* ACTIVE CONTENT */}
-                {isActive && (
-                  <div className="space-y-8 z-10 h-full flex flex-col justify-between">
-                    
-                    <div>
-                      <div className="flex items-center gap-3 mb-4 opacity-50">
-                        <product.icon className={`w-6 h-6 ${product.textColor}`} />
-                        <span className={`text-sm font-bold tracking-widest uppercase ${product.textColor}`}>{product.category}</span>
-                      </div>
-                      <h2 className={`text-6xl md:text-7xl font-black leading-none mb-4 ${product.textColor}`}>
-                        {product.name}
-                      </h2>
-                      <p className={`text-xl font-medium max-w-lg ${product.textColor} opacity-80`}>
-                         Purchase this item using LazorKit. The transaction will be sponsored by the Paymaster.
-                      </p>
+                    <div className="bg-black/80 backdrop-blur border border-cyber-border px-4 py-2 rounded-full text-xs font-mono text-white flex items-center gap-2 shadow-lg">
+                        <Zap className="w-3 h-3 text-neon-yellow" />
+                        <span>INSTANT DELIVERY</span>
                     </div>
-
-                    <div className="space-y-8 animate-in fade-in slide-in-from-bottom duration-500">
-                      <div className="flex items-baseline gap-3">
-                         <span className={`text-8xl font-black ${product.textColor}`}>{product.price}</span>
-                         <span className={`text-3xl font-bold opacity-60 ${product.textColor}`}>SOL</span>
-                      </div>
-
-                      {txSignature ? (
-                        <div className="space-y-4">
-                           <button className="w-full py-6 rounded-3xl bg-emerald-500 text-white text-2xl font-black uppercase tracking-widest flex items-center justify-center gap-3 cursor-default">
-                              <CheckCircle className="w-8 h-8" /> Purchase Successful
-                           </button>
-                           <a 
-                             href={`https://solscan.io/tx/${txSignature}?cluster=devnet`} 
-                             target="_blank"
-                             rel="noopener noreferrer"
-                             className={`block w-full text-center text-sm font-bold uppercase tracking-widest hover:underline ${product.textColor} flex items-center justify-center gap-2`}
-                           >
-                             View on Solscan <ExternalLink className="w-4 h-4" />
-                           </a>
-                        </div>
-                      ) : (
-                        <button
-                           onClick={(e) => { e.stopPropagation(); handlePurchase(product); }}
-                           disabled={processing}
-                           className={`w-full py-8 rounded-3xl text-3xl font-black uppercase tracking-widest transition-all hover:scale-[1.02] active:scale-95 shadow-xl
-                             ${product.id === 2 ? 'bg-black text-white' : 'bg-white text-black'}
-                           `}
-                         >
-                           {processing ? (
-                             <div className="flex items-center justify-center gap-4">
-                               <Loader2 className="w-8 h-8 animate-spin" /> PROCESSING
-                             </div>
-                           ) : (
-                             <div className="flex items-center justify-center gap-4">
-                               <Fingerprint className="w-10 h-10" />
-                               {isConnected ? "CONFIRM PAY" : "CONNECT"}
-                             </div>
-                           )}
-                         </button>
-                      )}
-                    </div>
-
-                    {/* TECH SPEC */}
-                    <div className="hidden md:block absolute right-12 bottom-40 text-right pointer-events-none">
-                        <div className="inline-block glass-strong p-6 rounded-2xl bg-black/20 border-l-4 border-emerald-500 backdrop-blur-md">
-                           <div className="flex items-center justify-end gap-2 text-emerald-400 text-sm font-bold mb-2 uppercase tracking-wider">
-                              Code Execution <Code2 className="w-4 h-4" /> 
-                           </div>
-                           <pre className="text-xs font-mono text-white/80 text-right">
-{`// 1. Define Transfer
-const ix = SystemProgram.transfer({
-  to: MERCHANT,
-  lamports: ${product.price} * SOL
-});
-
-// 2. Sign via Passkey & Paymaster
-await signAndSend([ix]);`}
-                           </pre>
-                        </div>
-                    </div>
-
-                  </div>
-                )}
-                
-                {product.id === 3 && (
-                   <>
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-8 bg-[#050505] rounded-r-full" />
-                    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-8 bg-[#050505] rounded-l-full" />
-                   </>
-                )}
-
-              </div>
+                </div>
             </div>
-          );
-        })}
+
+            {/* Text Details */}
+            <div className="space-y-6 max-w-md mx-auto lg:mx-0">
+                <div>
+                    <h1 className="text-4xl md:text-5xl font-black tracking-tighter text-white mb-2">
+                        NEURAL LINK <span className="text-cyber-muted text-2xl font-normal">v2.0</span>
+                    </h1>
+                    <p className="text-cyber-muted text-sm font-mono tracking-widest uppercase">
+                        Solana-Native Hardware Interface
+                    </p>
+                </div>
+
+                <p className="text-gray-400 leading-relaxed text-lg">
+                    Direct cortex interface allowing zero-latency thought transmission. 
+                    Now compatible with LazorKit Paymaster for instant, gasless settlement on the Solana network.
+                </p>
+
+                <div className="flex gap-6 py-6 border-t border-cyber-border/30">
+                    <div className="space-y-1">
+                        <span className="text-[10px] uppercase tracking-wider text-cyber-muted">Compatibility</span>
+                        <div className="flex items-center gap-2 text-white font-bold">
+                            <ShieldCheck className="w-4 h-4 text-neon-blue" />
+                            Bio-Auth Ready
+                        </div>
+                    </div>
+                    <div className="space-y-1">
+                        <span className="text-[10px] uppercase tracking-wider text-cyber-muted">Network</span>
+                        <div className="flex items-center gap-2 text-white font-bold">
+                            <Package className="w-4 h-4 text-neon-purple" />
+                            Solana Devnet
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {/* RIGHT COLUMN: The Checkout Logic */}
+        <div className="lg:sticky lg:top-24 animate-in slide-in-from-right duration-700 delay-200">
+            {/* This is the Widget we built in the previous step.
+               It handles the connection, the X-Ray logs, and the transaction.
+            */}
+            <CheckoutWidget />
+            
+            {/* Developer Note */}
+            <div className="mt-6 text-center">
+                <p className="text-[10px] text-cyber-muted font-mono">
+                    POWERED BY LAZORKIT SDK V2 • SECURE ENCLAVE
+                </p>
+            </div>
+        </div>
 
       </div>
     </div>
