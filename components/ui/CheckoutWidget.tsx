@@ -1,12 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-// Assuming CyberCard exists, if not we'll use a simple div wrapper to be safe
 import { ShieldCheck, Fingerprint, Lock, Loader2, CheckCircle, Minus, Plus, RefreshCw, ExternalLink, Droplets } from "lucide-react";
 import { useLazorContext } from "@/components/Lazorkit/LazorProvider";
 import { PublicKey, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
 
-// Simple Card Wrapper in case CyberCard is missing
 function CyberCard({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
     <div className={`bg-zinc-900 border border-zinc-800 rounded-xl p-6 ${className}`}>
@@ -15,11 +13,10 @@ function CyberCard({ children, className }: { children: React.ReactNode; classNa
   );
 }
 
-// Demo Merchant
-const MERCHANT_ADDRESS = "LazorNbGjP3X8Jd9V1w3J9x4jP5X2y8Z1k7M4n3P2qR";
+// ✅ YOUR ADDRESS (Safe String)
+const MERCHANT_ADDRESS_STRING = "FvyYz9tqnCmG4XYrRKFG4fCrsUwK7T3KJsd97MFWGSiy";
 
 export function CheckoutWidget() {
-  // FIX: Use ONLY our Global Provider (No mixing hooks)
   const { isConnected, wallet, connectAuth, disconnectAuth, signAndSend } = useLazorContext();
   
   const [isGasless, setIsGasless] = useState(false);
@@ -31,7 +28,6 @@ export function CheckoutWidget() {
   const ITEM_PRICE = 0.05;
   const MAX_QUANTITY = 10;
 
-  // Stop spinning on connect
   useEffect(() => {
     if (isConnected && wallet) {
       setIsProcessing(false);
@@ -46,31 +42,23 @@ export function CheckoutWidget() {
     setIsProcessing(true);
 
     try {
-      // ============================================
-      // SCENARIO A: LOGIN
-      // ============================================
       if (!isConnected) {
         console.log("[AUTH] Initiating Passkey Flow...");
-        // Use our Provider's wrapper
         await connectAuth();
       } 
-      // ============================================
-      // SCENARIO B: TRANSACTION
-      // ============================================
       else {
         if (!wallet) throw new Error("Wallet not found");
 
         const totalCost = quantity * ITEM_PRICE;
         console.log(`[TX] Building Transaction...`);
 
-        // 1. Build Instruction
+        // ✅ SAFE KEY CREATION
         const ix = SystemProgram.transfer({
           fromPubkey: new PublicKey(wallet.smartWallet),
-          toPubkey: new PublicKey(MERCHANT_ADDRESS),
+          toPubkey: new PublicKey(MERCHANT_ADDRESS_STRING),
           lamports: Math.floor(totalCost * LAMPORTS_PER_SOL),
         });
 
-        // 2. Sign & Send via Provider (Handles Gasless Logic internally)
         const sig = await signAndSend([ix]);
         
         setSignature(sig);
@@ -84,9 +72,6 @@ export function CheckoutWidget() {
     }
   };
 
-  // ============================================
-  // SUCCESS UI
-  // ============================================
   if (isSuccess) {
     return (
         <CyberCard className="space-y-6 text-center py-8">
@@ -113,9 +98,6 @@ export function CheckoutWidget() {
     )
   }
 
-  // ============================================
-  // MAIN UI
-  // ============================================
   return (
     <CyberCard className="space-y-6">
       {/* Header */}
