@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { ShieldCheck, Fingerprint, Lock, Loader2, CheckCircle, Minus, Plus, RefreshCw, ExternalLink, Droplets } from "lucide-react";
+// 🚨 CRITICAL FIX: DO NOT IMPORT useWallet HERE.
 import { useLazorContext } from "@/components/Lazorkit/LazorProvider";
 import { PublicKey, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
 
@@ -13,10 +14,10 @@ function CyberCard({ children, className }: { children: React.ReactNode; classNa
   );
 }
 
-// ✅ YOUR ADDRESS (Safe String)
 const MERCHANT_ADDRESS_STRING = "FvyYz9tqnCmG4XYrRKFG4fCrsUwK7T3KJsd97MFWGSiy";
 
 export function CheckoutWidget() {
+  // 1. Consume ONLY the Safe Context
   const { isConnected, wallet, connectAuth, disconnectAuth, signAndSend } = useLazorContext();
   
   const [isGasless, setIsGasless] = useState(false);
@@ -42,17 +43,18 @@ export function CheckoutWidget() {
     setIsProcessing(true);
 
     try {
+      // SCENARIO A: LOGIN
       if (!isConnected) {
         console.log("[AUTH] Initiating Passkey Flow...");
         await connectAuth();
       } 
+      // SCENARIO B: TRANSACTION
       else {
         if (!wallet) throw new Error("Wallet not found");
 
         const totalCost = quantity * ITEM_PRICE;
         console.log(`[TX] Building Transaction...`);
 
-        // ✅ SAFE KEY CREATION
         const ix = SystemProgram.transfer({
           fromPubkey: new PublicKey(wallet.smartWallet),
           toPubkey: new PublicKey(MERCHANT_ADDRESS_STRING),
@@ -67,7 +69,7 @@ export function CheckoutWidget() {
       }
     } catch (e: any) {
       console.error(e);
-      alert(`Error: ${e.message}`);
+      // alert(`Error: ${e.message}`); // Optional: mute alerts if preferred
       setIsProcessing(false);
     }
   };
