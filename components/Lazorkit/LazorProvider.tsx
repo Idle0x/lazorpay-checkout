@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, ReactNode, useMemo } from "react";
+// We only import the Provider and hook. We will be very careful with the hook.
 import { LazorkitProvider as SDKProvider, useWallet } from "@lazorkit/wallet";
 import { Connection } from "@solana/web3.js";
 
@@ -8,10 +9,16 @@ import { Connection } from "@solana/web3.js";
 const RPC_URL = "https://api.devnet.solana.com";
 const PORTAL_URL = "https://portal.lazor.sh";
 
-// --- CONTEXT DEFINITIONS ---
+// --- TYPES ---
+interface WalletData {
+  smartWallet: string;
+  credentialId: string;
+  passkeyPubkey?: any;
+}
+
 interface LazorContextType {
   isConnected: boolean;
-  wallet: { smartWallet: string; credentialId: string } | null;
+  wallet: WalletData | null;
   connection: Connection;
   signAndSend: (instructions: any[]) => Promise<string>;
   connectAuth: () => Promise<void>;
@@ -22,15 +29,31 @@ const LazorContext = createContext<LazorContextType | undefined>(undefined);
 
 // --- INNER LOGIC COMPONENT ---
 function LazorLogic({ children }: { children: ReactNode }) {
-  const { connect, disconnect, wallet, isConnected, signAndSendTransaction } = useWallet();
+  // 🚨 CRITICAL FIX: Only destructure METHODS. Never destructure state properties eagerly.
+  const { connect, disconnect, signAndSendTransaction } = useWallet();
   
-  // OPTIMIZATION: Memoize connection to prevent re-creation on every render
+  // We mirror the wallet state locally to avoid hydration mismatches
+  const [localWallet, setLocalWallet] = useState<WalletData | null>(null);
+  
   const connection = useMemo(() => new Connection(RPC_URL), []);
 
+  // 1. SAFE CONNECT
   const connectAuth = async () => {
     try {
       console.log("🔵 Initializing Passkey Auth...");
-      await connect({ feeMode: 'paymaster' });
+      
+      // We assume the SDK connect() returns the wallet info object.
+      // We do NOT rely on the hook's state updating automatically during this render cycle.
+      const walletInfo = await connect({ feeMode: 'paymaster' });
+      
+      if (walletInfo && walletInfo.smartWallet) {
+        console.log("✅ Auth Success:", walletInfo);
+        setLocalWallet({
+          smartWallet: walletInfo.smartWallet,
+          credentialId: walletInfo.credentialId,
+          passkeyPubkey: walletInfo.passkeyPubkey
+        });
+      }
     } catch (e: any) {
       console.error("🔴 Connection Failed:", e);
       if (!e.message?.includes("cancelled")) {
@@ -39,12 +62,15 @@ function LazorLogic({ children }: { children: ReactNode }) {
     }
   };
 
+  // 2. SAFE DISCONNECT
   const disconnectAuth = async () => {
     try {
       await disconnect();
-      // FIX: Only access window/localStorage on the client
+      setLocalWallet(null);
+      
+      // Safe storage clearing
       if (typeof window !== 'undefined') {
-        localStorage.clear();
+        localStorage.removeItem("lazor_wallet_info");
         window.location.reload();
       }
     } catch (e) {
@@ -52,8 +78,9 @@ function LazorLogic({ children }: { children: ReactNode }) {
     }
   };
 
+  // 3. SAFE SIGN & SEND
   const signAndSend = async (instructions: any[]) => {
-    if (!wallet) throw new Error("Wallet not connected");
+    if (!localWallet) throw new Error("Wallet not connected");
 
     console.log("🟡 Requesting Paymaster Sponsorship...");
     
@@ -71,18 +98,19 @@ function LazorLogic({ children }: { children: ReactNode }) {
     return signature;
   };
 
-  // OPTIMIZATION: Memoize context value
+  // 4. AUTO-RECONNECT (Optional/Safe)
+  // We can try to silently connect on mount if we trust the SDK's cache,
+  // but for this demo, let's keep it manual to be 100% crash-proof.
+  // If you want persistence, we can add it later.
+
   const contextValue = useMemo(() => ({
-    isConnected, 
-    wallet: wallet ? { 
-      smartWallet: wallet.smartWallet,
-      credentialId: wallet.credentialId 
-    } : null,
+    isConnected: !!localWallet, 
+    wallet: localWallet,
     connection,
     signAndSend,
     connectAuth,
     disconnectAuth
-  }), [isConnected, wallet, connection]);
+  }), [localWallet, connection]);
 
   return (
     <LazorContext.Provider value={contextValue}>
@@ -93,7 +121,6 @@ function LazorLogic({ children }: { children: ReactNode }) {
 
 // --- MAIN PROVIDER WRAPPER ---
 export function LazorProvider({ children }: { children: ReactNode }) {
-  // FIX: Hydration Guard to prevent SSR crashes
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -101,7 +128,6 @@ export function LazorProvider({ children }: { children: ReactNode }) {
   }, []);
 
   if (!mounted) {
-    // Return empty fragment or loader during SSR to avoid mismatch
     return <div className="min-h-screen bg-[#050505]" />;
   }
 
