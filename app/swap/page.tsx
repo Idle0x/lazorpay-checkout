@@ -1,186 +1,194 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { ArrowDown, RefreshCw, Settings, Wallet, Loader2, ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { 
-  ArrowDownUp, 
-  Settings, 
-  RefreshCcw, 
-  Zap, 
-  Code2,
-  Wallet,
-  CheckCircle,
-  Loader2
-} from "lucide-react";
 import { useWallet } from "@lazorkit/wallet";
 import { useLazorContext } from "@/components/Lazorkit/LazorProvider";
+import { useConsole } from "@/components/ui/DevConsole";
+import { SystemProgram, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { APP_CONFIG } from "@/lib/constants";
 
 export default function SwapPage() {
-  const [amount, setAmount] = useState("");
-  const [quote, setQuote] = useState("");
-  const [isSwapping, setIsSwapping] = useState(false);
-  const [processing, setProcessing] = useState(false);
-  const [success, setSuccess] = useState(false);
-  
-  // Token State
-  const [fromToken, setFromToken] = useState({ sym: "SOL", color: "text-cyan-400" });
-  const [toToken, setToToken] = useState({ sym: "USDC", color: "text-purple-400" });
+  const { signAndSendTransaction } = useWallet();
+  const { isConnected, connectAuth, wallet } = useLazorContext();
+  const { addLog, toggle, isOpen } = useConsole();
 
-  const { connect } = useWallet();
-  const { isConnected } = useLazorContext();
+  const [fromAmount, setFromAmount] = useState("");
+  const [toAmount, setToAmount] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [txHash, setTxHash] = useState("");
 
-  // Simulate Live Quoting
+  // Mock Exchange Rate: 1 SOL = 150 USDC (Devnet Simulation)
   useEffect(() => {
-    if (!amount) {
-      setQuote("");
+    const val = parseFloat(fromAmount);
+    if (!isNaN(val)) {
+      setToAmount((val * 150).toFixed(2));
+    } else {
+      setToAmount("");
+    }
+  }, [fromAmount]);
+
+  const handleSwap = async () => {
+    if (!isConnected) {
+      await connectAuth();
       return;
     }
-    const timer = setTimeout(() => {
-      const val = parseFloat(amount) * 145.20; 
-      setQuote(val.toFixed(2));
-    }, 200);
-    return () => clearTimeout(timer);
-  }, [amount]);
 
-  const handleFlip = () => {
-    setIsSwapping(true);
-    setTimeout(() => {
-      setFromToken(toToken);
-      setToToken(fromToken);
-      setAmount(quote);
-      setIsSwapping(false);
-    }, 300);
-  };
+    if (!fromAmount || parseFloat(fromAmount) <= 0) return;
 
-  const executeSwap = async () => {
-    setProcessing(true);
+    setIsProcessing(true);
+    if (!isOpen) toggle(); // Open X-Ray Console
+
     try {
-      if (!isConnected) await connect();
-      await new Promise(r => setTimeout(r, 2000));
-      setSuccess(true);
-    } catch (e) {
-      console.error(e);
+      addLog(`[SWAP] Calculating route: SOL -> USDC`, "info");
+      addLog(`[SWAP] Input: ${fromAmount} SOL`, "info");
+      
+      // 1. Build Transaction (Simulating Swap via Transfer to LP)
+      // In a real mainnet app, this would be a Jupiter Aggregator instruction.
+      // For this Devnet demo, we transfer to the "Merchant" (The Pool) to prove auth works.
+      const ix = SystemProgram.transfer({
+        fromPubkey: new PublicKey(wallet!.smartWallet),
+        toPubkey: new PublicKey(APP_CONFIG.MERCHANT_ADDRESS),
+        lamports: Math.floor(parseFloat(fromAmount) * LAMPORTS_PER_SOL),
+      });
+
+      addLog(`[SDK] Constructing Transaction...`, "info");
+      addLog(`[PAYMASTER] Requesting Gas Sponsorship...`, "warning");
+
+      // 2. Execute via LazorKit
+      const sig = await signAndSendTransaction({
+        instructions: [ix],
+        transactionOptions: { clusterSimulation: "devnet" }
+      });
+
+      setTxHash(sig);
+      addLog(`[CHAIN] Swap Executed! Hash: ${sig.slice(0,8)}...`, "success");
+
+    } catch (e: any) {
+      addLog(`[ERROR] ${e.message}`, "error");
     } finally {
-      setProcessing(false);
+      setIsProcessing(false);
     }
   };
 
   return (
-    <div className="min-h-screen py-20 px-4 flex flex-col items-center justify-center relative overflow-hidden">
+    <div className="min-h-screen bg-black flex items-center justify-center p-4 relative overflow-hidden">
       
-      {/* 1. HEADER */}
-      <div className="text-center space-y-4 mb-16 relative z-10">
-        <div className="inline-flex items-center gap-2 text-zinc-500 text-sm font-bold font-mono uppercase tracking-widest">
-          <Link href="/" className="hover:text-white transition-colors">HUB</Link> / DEFI SWAP
-        </div>
-        <h1 className="text-5xl md:text-7xl font-black text-white tracking-tighter flex items-center gap-4 justify-center">
-          ATOMIC SWAP <Zap className="w-12 h-12 text-yellow-400 fill-yellow-400 animate-pulse" />
-        </h1>
+      {/* Background Ambience */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-neon-purple/20 rounded-full blur-[100px] pointer-events-none" />
+      
+      {/* Back Button */}
+      <div className="absolute top-24 left-4 md:left-8 z-20">
+        <Link href="/" className="group flex items-center gap-2 text-cyber-muted hover:text-white transition-colors">
+            <div className="p-2 rounded-full border border-cyber-border group-hover:border-neon-purple/50 bg-black">
+                <ArrowLeft className="w-5 h-5" />
+            </div>
+            <span className="text-xs font-bold font-mono tracking-widest uppercase">Hub</span>
+        </Link>
       </div>
 
-      {/* 2. THE REACTOR (Main Interface) */}
-      <div className="relative w-full max-w-xl">
-        
-        {/* Tech Reveal Sidebar (Desktop) */}
-        <div className="hidden xl:block absolute -right-72 top-20 w-64 animate-in fade-in slide-in-from-left duration-700 delay-200">
-           <div className="glass p-6 rounded-2xl border-l-4 border-emerald-500">
-              <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold mb-2 uppercase tracking-wider">
-                 JIT Liquidity <Code2 className="w-3 h-3" />
+      <div className="w-full max-w-md relative z-10">
+        <div className="bg-[#111] border border-white/10 rounded-3xl p-6 shadow-2xl backdrop-blur-xl">
+          
+          {/* Header */}
+          <div className="flex items-center justify-between mb-8">
+            <h1 className="text-xl font-bold text-white tracking-tight">Atomic Swap</h1>
+            <button className="p-2 hover:bg-white/5 rounded-full text-cyber-muted hover:text-white transition-colors">
+              <Settings className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Input Field (SOL) */}
+          <div className="bg-black/50 rounded-2xl p-4 border border-white/5 hover:border-neon-purple/50 transition-colors group">
+            <div className="flex justify-between mb-2">
+              <span className="text-xs text-cyber-muted font-bold tracking-wider">PAY</span>
+              <span className="text-xs text-cyber-muted">Balance: --</span>
+            </div>
+            <div className="flex items-center justify-between gap-4">
+              <input 
+                type="number" 
+                placeholder="0.00"
+                value={fromAmount}
+                onChange={(e) => setFromAmount(e.target.value)}
+                className="bg-transparent text-3xl font-mono text-white placeholder-white/20 outline-none w-full"
+              />
+              <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-full shrink-0">
+                <div className="w-5 h-5 rounded-full bg-black border border-white/20" />
+                <span className="font-bold text-sm">SOL</span>
               </div>
-              <pre className="text-[10px] font-mono text-zinc-400">
-{`// 1 Signature, 2 Transfers
-const ix = await jupiter.swap({
-  route: bestRoute,
-  userPublicKey: wallet.key
-});`}
-              </pre>
-           </div>
+            </div>
+          </div>
+
+          {/* Switcher */}
+          <div className="relative h-8 flex items-center justify-center -my-2 z-10">
+            <div className="bg-[#111] border border-white/10 p-2 rounded-full shadow-lg">
+              <ArrowDown className="w-4 h-4 text-neon-purple" />
+            </div>
+          </div>
+
+          {/* Output Field (USDC) */}
+          <div className="bg-black/50 rounded-2xl p-4 border border-white/5">
+            <div className="flex justify-between mb-2">
+              <span className="text-xs text-cyber-muted font-bold tracking-wider">RECEIVE (EST.)</span>
+            </div>
+            <div className="flex items-center justify-between gap-4">
+              <input 
+                type="text" 
+                readOnly
+                value={toAmount}
+                placeholder="0.00"
+                className="bg-transparent text-3xl font-mono text-neon-purple placeholder-white/20 outline-none w-full"
+              />
+              <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-full shrink-0">
+                <div className="w-5 h-5 rounded-full bg-blue-500 border border-white/20" />
+                <span className="font-bold text-sm">USDC</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Rate Info */}
+          <div className="flex items-center justify-between px-2 py-4 text-xs text-cyber-muted">
+            <div className="flex items-center gap-1">
+              <RefreshCw className="w-3 h-3" />
+              <span>1 SOL ≈ 150.00 USDC</span>
+            </div>
+            <div className="flex items-center gap-1 text-neon-green">
+              <span className="w-2 h-2 bg-neon-green rounded-full animate-pulse" />
+              <span>Low Gas (Sponsored)</span>
+            </div>
+          </div>
+
+          {/* Action Button */}
+          {txHash ? (
+             <a 
+               href={`https://solscan.io/tx/${txHash}?cluster=devnet`} 
+               target="_blank"
+               className="w-full bg-neon-green text-black font-bold py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-green-400 transition-colors"
+             >
+               VIEW ON EXPLORER
+             </a>
+          ) : (
+            <button 
+              onClick={handleSwap}
+              disabled={isProcessing}
+              className="w-full bg-white text-black font-bold py-4 rounded-xl flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isProcessing ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" /> SWAPPING...
+                </>
+              ) : !isConnected ? (
+                <>
+                  <Wallet className="w-5 h-5" /> CONNECT PASSKEY
+                </>
+              ) : (
+                "CONFIRM SWAP"
+              )}
+            </button>
+          )}
+
         </div>
-
-        {/* Success Overlay */}
-        {success ? (
-           <div className="glass-strong rounded-[3rem] p-12 min-h-[600px] flex flex-col items-center justify-center text-center animate-in zoom-in duration-300">
-              <div className="w-24 h-24 rounded-full bg-emerald-500/20 flex items-center justify-center mb-6 border border-emerald-500/50 shadow-[0_0_40px_rgba(16,185,129,0.4)]">
-                 <CheckCircle className="w-12 h-12 text-emerald-400" />
-              </div>
-              <h2 className="text-4xl font-black text-white mb-2">SWAP COMPLETE</h2>
-              <p className="text-zinc-400 text-lg mb-8">
-                 Exchanged <span className="text-white font-bold">{amount} {fromToken.sym}</span> for <span className="text-white font-bold">{quote} {toToken.sym}</span>
-              </p>
-              <button 
-                onClick={() => { setSuccess(false); setAmount(""); }}
-                className="btn-zinc"
-              >
-                New Trade
-              </button>
-           </div>
-        ) : (
-           <div className="relative space-y-4">
-              
-              {/* TOP CONTAINER (FROM) - TALLER */}
-              <div className={`glass-strong rounded-[3rem] px-10 py-14 min-h-[320px] flex flex-col justify-between transition-all duration-500 transform ${isSwapping ? 'translate-y-40 opacity-50 scale-90' : 'translate-y-0 opacity-100'}`}>
-                 <div className="flex justify-between items-center mb-4">
-                    <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Selling</span>
-                    <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Balance: 4.20</span>
-                 </div>
-                 
-                 <div className="flex items-center justify-between gap-4 flex-1">
-                    <input 
-                       type="number"
-                       value={amount}
-                       onChange={(e) => setAmount(e.target.value)}
-                       placeholder="0.00"
-                       className="w-full bg-transparent text-7xl font-black text-white outline-none placeholder-zinc-700 h-full"
-                    />
-                    <div className={`text-4xl font-black ${fromToken.color} px-6 py-4 rounded-2xl bg-white/5 border border-white/10`}>
-                       {fromToken.sym}
-                    </div>
-                 </div>
-              </div>
-
-              {/* LIGHTNING SWITCH BUTTON */}
-              <div className="absolute left-1/2 top-[48%] -translate-x-1/2 -translate-y-1/2 z-20">
-                 <button 
-                    onClick={handleFlip}
-                    className="w-20 h-20 rounded-full bg-black border-4 border-zinc-800 flex items-center justify-center hover:scale-110 hover:border-cyan-400 transition-all duration-300 shadow-2xl group"
-                 >
-                    <ArrowDownUp className="w-8 h-8 text-white group-hover:rotate-180 transition-transform duration-500" />
-                 </button>
-              </div>
-
-              {/* BOTTOM CONTAINER (TO) - TALLER */}
-              <div className={`glass-strong rounded-[3rem] px-10 py-14 min-h-[320px] flex flex-col justify-between bg-black/40 transition-all duration-500 transform ${isSwapping ? '-translate-y-40 opacity-50 scale-90' : 'translate-y-0 opacity-100'}`}>
-                 <div className="flex justify-between items-center mb-4">
-                    <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Buying</span>
-                    {amount && <span className="text-xs font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-1"><Zap className="w-3 h-3" /> Best Price</span>}
-                 </div>
-                 
-                 <div className="flex items-center justify-between gap-4 flex-1">
-                    <div className="w-full text-7xl font-black text-zinc-300 truncate h-full flex items-center">
-                       {quote || "0.00"}
-                    </div>
-                    <div className={`text-4xl font-black ${toToken.color} px-6 py-4 rounded-2xl bg-white/5 border border-white/10`}>
-                       {toToken.sym}
-                    </div>
-                 </div>
-              </div>
-
-              {/* ACTION BUTTON */}
-              <button 
-                 onClick={executeSwap}
-                 disabled={processing}
-                 className="w-full py-8 mt-6 rounded-[2rem] bg-white text-black text-3xl font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-lg flex items-center justify-center gap-4"
-              >
-                 {processing ? (
-                    <><Loader2 className="w-8 h-8 animate-spin" /> CONFIRMING</>
-                 ) : (
-                    <>{isConnected ? "SWAP ASSETS" : "CONNECT WALLET"}</>
-                 )}
-              </button>
-
-           </div>
-        )}
-
       </div>
     </div>
   );
