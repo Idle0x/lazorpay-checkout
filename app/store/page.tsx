@@ -8,8 +8,9 @@ import {
 import { useLazorContext } from "@/components/Lazorkit/LazorProvider";
 import { SystemProgram, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
 
-// --- DEMO MERCHANT ADDRESS (Random Devnet Wallet) ---
-const MERCHANT_ADDRESS = new PublicKey("LazorNbGjP3X8Jd9V1w3J9x4jP5X2y8Z1k7M4n3P2qR");
+// FIX: Use a string constant. Do NOT call new PublicKey() here.
+// Using a known valid Devnet address to be safe.
+const MERCHANT_ADDRESS_STRING = "4Nd1mK2gq5H6fZ9F5YpYw1b5Z1tcHTfb3e8DqRLVQjax";
 
 // --- TYPES ---
 type Product = {
@@ -28,7 +29,7 @@ const PRODUCTS: Product[] = [
     id: 1,
     name: "NEURAL LINK",
     category: "HARDWARE",
-    price: 0.01, // Low price for Devnet testing
+    price: 0.01,
     color: "bg-gradient-to-br from-zinc-700 to-zinc-900 border-zinc-600",
     textColor: "text-white",
     icon: Cpu
@@ -58,13 +59,10 @@ export default function StorePage() {
   const [processing, setProcessing] = useState(false);
   const [txSignature, setTxSignature] = useState<string | null>(null);
   
-  // USE REAL CONTEXT
   const { isConnected, wallet, connectAuth, signAndSend } = useLazorContext();
 
-  // --- REAL TRANSACTION LOGIC ---
   const handlePurchase = async (product: Product) => {
     try {
-      // 1. Ensure Auth
       if (!isConnected || !wallet) {
         await connectAuth();
         return;
@@ -72,17 +70,15 @@ export default function StorePage() {
 
       setProcessing(true);
 
-      // 2. Create Instruction (Real SOL Transfer)
+      // FIX: Instantiate PublicKey inside the handler (Safe)
+      // FIX: Use Math.floor to ensure integer lamports
       const instruction = SystemProgram.transfer({
         fromPubkey: new PublicKey(wallet.smartWallet),
-        toPubkey: MERCHANT_ADDRESS,
-        lamports: product.price * LAMPORTS_PER_SOL,
+        toPubkey: new PublicKey(MERCHANT_ADDRESS_STRING),
+        lamports: Math.floor(product.price * LAMPORTS_PER_SOL),
       });
 
-      // 3. Send via LazorKit (Gasless)
       const sig = await signAndSend([instruction]);
-      
-      // 4. Success State
       setTxSignature(sig);
 
     } catch (e) {
@@ -172,7 +168,6 @@ export default function StorePage() {
                 {isActive && (
                   <div className="space-y-8 z-10 h-full flex flex-col justify-between">
                     
-                    {/* Active Header */}
                     <div>
                       <div className="flex items-center gap-3 mb-4 opacity-50">
                         <product.icon className={`w-6 h-6 ${product.textColor}`} />
@@ -186,16 +181,12 @@ export default function StorePage() {
                       </p>
                     </div>
 
-                    {/* Active Footer */}
                     <div className="space-y-8 animate-in fade-in slide-in-from-bottom duration-500">
-                      
-                      {/* Price */}
                       <div className="flex items-baseline gap-3">
                          <span className={`text-8xl font-black ${product.textColor}`}>{product.price}</span>
                          <span className={`text-3xl font-bold opacity-60 ${product.textColor}`}>SOL</span>
                       </div>
 
-                      {/* Main Button / Success State */}
                       {txSignature ? (
                         <div className="space-y-4">
                            <button className="w-full py-6 rounded-3xl bg-emerald-500 text-white text-2xl font-black uppercase tracking-widest flex items-center justify-center gap-3 cursor-default">
@@ -220,7 +211,7 @@ export default function StorePage() {
                          >
                            {processing ? (
                              <div className="flex items-center justify-center gap-4">
-                                <Loader2 className="w-8 h-8 animate-spin" /> PROCESSING
+                               <Loader2 className="w-8 h-8 animate-spin" /> PROCESSING
                              </div>
                            ) : (
                              <div className="flex items-center justify-center gap-4">
@@ -232,7 +223,7 @@ export default function StorePage() {
                       )}
                     </div>
 
-                    {/* Tech Spec (Floating X-Ray) */}
+                    {/* Tech Spec */}
                     <div className="hidden md:block absolute right-12 bottom-40 text-right pointer-events-none">
                         <div className="inline-block glass-strong p-6 rounded-2xl bg-black/20 border-l-4 border-emerald-500 backdrop-blur-md">
                            <div className="flex items-center justify-end gap-2 text-emerald-400 text-sm font-bold mb-2 uppercase tracking-wider">
@@ -254,7 +245,6 @@ await signAndSend([ix]);`}
                   </div>
                 )}
                 
-                {/* Ticket Effect */}
                 {product.id === 3 && (
                    <>
                     <div className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-8 bg-[#050505] rounded-r-full" />
