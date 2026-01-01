@@ -1,200 +1,188 @@
 "use client";
 
 import React, { useState } from "react";
+import { ArrowLeft, Check, CreditCard, Zap, Shield, Loader2, Crown } from "lucide-react";
 import Link from "next/link";
-import { 
-  Check, 
-  Zap, 
-  Shield, 
-  Globe, 
-  CreditCard,
-  Code2,
-  Loader2,
-  Infinity
-} from "lucide-react";
 import { useWallet } from "@lazorkit/wallet";
 import { useLazorContext } from "@/components/Lazorkit/LazorProvider";
+import { useConsole } from "@/components/ui/DevConsole";
+import { SystemProgram, PublicKey } from "@solana/web3.js";
+import { APP_CONFIG } from "@/lib/constants";
 
-// --- PLANS DATA ---
 const PLANS = [
   {
-    id: "starter",
-    name: "STARTER",
-    price: 5,
-    features: ["1,000 tx/mo", "Basic Analytics", "Community Support"],
-    color: "bg-white/5 border-white/10", // Basic Glass
-    accent: "text-zinc-400",
-    icon: Globe
+    id: "basic",
+    name: "CITIZEN",
+    price: "0.5 SOL",
+    period: "/ month",
+    features: ["Basic Access", "Public Nodes", "Standard Support"],
+    color: "border-white/10",
+    glow: "group-hover:shadow-white/10",
+    icon: Shield
   },
   {
     id: "pro",
-    name: "PRO",
-    price: 25,
-    features: ["Unlimited tx", "Priority Relayer", "Gasless for Users", "24/7 Support"],
-    color: "bg-gradient-to-b from-indigo-900/50 to-purple-900/50 border-indigo-500/50 shadow-[0_0_50px_rgba(99,102,241,0.2)]", // Holographic
-    accent: "text-indigo-400",
-    icon: Zap,
-    popular: true
+    name: "OPERATIVE",
+    price: "2.0 SOL",
+    period: "/ month",
+    features: ["Priority Access", "Private RPC", "24/7 Uplink", "Auto-Sign"],
+    color: "border-neon-blue/50",
+    glow: "group-hover:shadow-[0_0_30px_rgba(59,130,246,0.3)]",
+    popular: true,
+    icon: Zap
   },
   {
-    id: "enterprise",
-    name: "ENTERPRISE",
-    price: 99,
-    features: ["Dedicated Nodes", "Custom Contracts", "SLA Guarantee", "Audit Reports"],
-    color: "bg-zinc-900 border-yellow-500/20", // Obsidian
-    accent: "text-yellow-500",
-    icon: Shield
+    id: "corp",
+    name: "SYNDICATE",
+    price: "10.0 SOL",
+    period: "/ month",
+    features: ["Root Access", "Dedicated Subnet", "Custom Protocols", "Audit Logs"],
+    color: "border-neon-purple/50",
+    glow: "group-hover:shadow-[0_0_30px_rgba(168,85,247,0.3)]",
+    icon: Crown
   }
 ];
 
 export default function SubsPage() {
-  const [billing, setBilling] = useState<'monthly' | 'yearly'>('monthly');
-  const [processingId, setProcessingId] = useState<string | null>(null);
-  const [activeSub, setActiveSub] = useState<string | null>(null);
-  
-  const { connect } = useWallet();
-  const { isConnected } = useLazorContext();
+  const { signAndSendTransaction } = useWallet();
+  const { isConnected, connectAuth, wallet } = useLazorContext();
+  const { addLog, toggle, isOpen } = useConsole();
 
-  const handleSubscribe = async (planId: string) => {
+  const [activePlan, setActivePlan] = useState<string | null>(null);
+  const [loadingId, setLoadingId] = useState<string | null>(null);
+
+  const handleSubscribe = async (plan: typeof PLANS[0]) => {
     if (!isConnected) {
-      await connect();
+      await connectAuth();
       return;
     }
-    
-    setProcessingId(planId);
-    // Simulate Allowance Approval
-    await new Promise(r => setTimeout(r, 2000));
-    setActiveSub(planId);
-    setProcessingId(null);
+
+    setLoadingId(plan.id);
+    if (!isOpen) toggle();
+
+    try {
+      addLog(`[SUBS] Initiating Recurring Protocol: ${plan.name}`, "info");
+      addLog(`[POLICY] Authorizing Pull: ${plan.price} ${plan.period}`, "warning");
+
+      // 1. Build Transaction
+      // Simulates authorizing a Subscription Contract
+      const ix = SystemProgram.transfer({
+        fromPubkey: new PublicKey(wallet!.smartWallet),
+        toPubkey: new PublicKey(APP_CONFIG.MERCHANT_ADDRESS),
+        lamports: 0, // Zero-value auth txn
+      });
+
+      addLog(`[SDK] Building Delegate Authority Instruction...`, "info");
+
+      // 2. Sign & Send
+      const sig = await signAndSendTransaction({
+        instructions: [ix],
+        transactionOptions: { clusterSimulation: "devnet" }
+      });
+
+      addLog(`[CHAIN] Subscription Active! Hash: ${sig.slice(0,8)}...`, "success");
+      setActivePlan(plan.id);
+
+    } catch (e: any) {
+      addLog(`[ERROR] ${e.message}`, "error");
+    } finally {
+      setLoadingId(null);
+    }
   };
 
   return (
-    <div className="min-h-screen py-20 px-4 flex flex-col items-center justify-center relative overflow-hidden">
+    <div className="min-h-screen bg-black text-white p-4 md:p-12 flex flex-col relative overflow-hidden">
       
-      {/* 1. HEADER */}
-      <div className="text-center space-y-6 mb-16 relative z-10">
-        <div className="inline-flex items-center gap-2 text-zinc-500 text-sm font-bold font-mono uppercase tracking-widest">
-          <Link href="/" className="hover:text-white transition-colors">HUB</Link> / RECURRING
-        </div>
-        <h1 className="text-5xl md:text-7xl font-black text-white tracking-tighter">
-          SAAS ENGINE
-        </h1>
+      {/* Background Ambience */}
+      <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-blue-900/10 to-transparent pointer-events-none" />
+
+      {/* Header */}
+      <div className="relative z-10 max-w-7xl mx-auto w-full mb-16">
+        <Link href="/" className="inline-flex items-center gap-2 text-cyber-muted hover:text-white transition-colors mb-8">
+            <ArrowLeft className="w-4 h-4" />
+            <span className="text-xs font-bold font-mono uppercase tracking-widest">Back to Hub</span>
+        </Link>
         
-        {/* Billing Toggle */}
-        <div className="inline-flex items-center p-1 rounded-full bg-white/5 border border-white/10">
-           <button 
-             onClick={() => setBilling('monthly')}
-             className={`px-6 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all ${billing === 'monthly' ? 'bg-white text-black' : 'text-zinc-500 hover:text-white'}`}
-           >
-             Monthly
-           </button>
-           <button 
-             onClick={() => setBilling('yearly')}
-             className={`px-6 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all ${billing === 'yearly' ? 'bg-white text-black' : 'text-zinc-500 hover:text-white'}`}
-           >
-             Yearly <span className="text-[9px] text-emerald-500 ml-1">-20%</span>
-           </button>
+        <div className="text-center">
+            <div className="inline-flex items-center justify-center p-3 rounded-full bg-white/5 mb-6 border border-white/10">
+                <CreditCard className="w-6 h-6 text-white" />
+            </div>
+            <h1 className="text-4xl md:text-6xl font-black tracking-tighter mb-4">RECURRING <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">ACCESS</span></h1>
+            <p className="text-cyber-muted max-w-xl mx-auto text-lg">
+                Authorize automated payments via LazorKit Smart Accounts. 
+                Zero friction. Total control.
+            </p>
         </div>
       </div>
 
-      {/* 2. THE MONOLITHS */}
-      <div className="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-3 gap-8 items-center relative z-10">
-         
-         {/* Tech Reveal (Desktop Float) */}
-         <div className="hidden xl:block absolute -right-48 top-0 w-56 animate-in fade-in slide-in-from-left duration-700 delay-500 pointer-events-none">
-           <div className="glass p-5 rounded-2xl border-l-4 border-indigo-500">
-              <div className="flex items-center gap-2 text-indigo-400 text-xs font-bold mb-2 uppercase tracking-wider">
-                 Auto-Approve <Infinity className="w-3 h-3" />
-              </div>
-              <pre className="text-[10px] font-mono text-zinc-400">
-{`// Auth once, pay forever
-await wallet.approve({
-  spender: "NETFLIX_DAO",
-  limit: "25 SOL/mo"
-});`}
-              </pre>
-           </div>
-        </div>
-
+      {/* Pricing Grid */}
+      <div className="relative z-10 max-w-7xl mx-auto w-full grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
         {PLANS.map((plan) => {
-          const isProcessing = processingId === plan.id;
-          const isActive = activeSub === plan.id;
-          const finalPrice = billing === 'yearly' ? Math.floor(plan.price * 0.8) : plan.price;
-
-          return (
-            <div 
-              key={plan.id}
-              className={`
-                relative group rounded-[2.5rem] p-8 md:p-10 border transition-all duration-500 ease-out
-                ${plan.color}
-                ${plan.popular ? 'scale-105 z-20 lg:-mt-12 shadow-2xl' : 'hover:scale-[1.02]'}
-                hover:-translate-y-4
-              `}
-            >
-               {/* Popular Badge */}
-               {plan.popular && (
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-indigo-500 text-white px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-indigo-500/50">
-                     Most Popular
-                  </div>
-               )}
-
-               <div className="space-y-8">
-                  {/* Icon & Name */}
-                  <div className="flex items-center justify-between">
-                     <plan.icon className={`w-8 h-8 ${plan.accent}`} />
-                     <h3 className={`text-xl font-black tracking-widest ${plan.accent}`}>{plan.name}</h3>
-                  </div>
-
-                  {/* Price */}
-                  <div>
-                     <div className="flex items-baseline gap-1">
-                        <span className="text-5xl font-black text-white">${finalPrice}</span>
-                        <span className="text-zinc-500 font-bold">/mo</span>
-                     </div>
-                     <p className="text-xs text-zinc-500 mt-2">Billed {billing}</p>
-                  </div>
-
-                  {/* Features */}
-                  <ul className="space-y-4">
-                     {plan.features.map((feat, i) => (
-                        <li key={i} className="flex items-center gap-3 text-sm font-medium text-zinc-300">
-                           <Check className={`w-4 h-4 ${plan.accent}`} />
-                           {feat}
-                        </li>
-                     ))}
-                  </ul>
-
-                  {/* Action Button */}
-                  <button 
-                    onClick={() => handleSubscribe(plan.id)}
-                    disabled={isProcessing || isActive}
+            const isActive = activePlan === plan.id;
+            const isProcessing = loadingId === plan.id;
+            
+            return (
+                <div 
+                    key={plan.id}
                     className={`
-                      w-full py-4 rounded-xl font-bold uppercase tracking-widest text-sm transition-all
-                      ${isActive 
-                        ? 'bg-emerald-500 text-white cursor-default' 
-                        : 'bg-white text-black hover:scale-105 active:scale-95'
-                      }
+                        relative bg-[#0a0a0a] border rounded-3xl p-8 transition-all duration-300 group hover:-translate-y-2
+                        ${plan.color} ${plan.glow} ${isActive ? 'ring-2 ring-neon-green border-neon-green bg-green-900/10' : ''}
                     `}
-                  >
-                    {isProcessing ? (
-                       <div className="flex items-center justify-center gap-2">
-                          <Loader2 className="w-4 h-4 animate-spin" /> Authorizing...
-                       </div>
-                    ) : isActive ? (
-                       <div className="flex items-center justify-center gap-2">
-                          <Check className="w-4 h-4" /> Active Plan
-                       </div>
-                    ) : (
-                       <div className="flex items-center justify-center gap-2">
-                          {isConnected ? "Auto-Pay" : "Connect"}
-                       </div>
+                >
+                    {plan.popular && (
+                        <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-neon-blue text-black text-xs font-black px-4 py-1 rounded-full uppercase tracking-widest">
+                            Most Popular
+                        </div>
                     )}
-                  </button>
-               </div>
-            </div>
-          );
+
+                    <div className="mb-8">
+                        <plan.icon className={`w-10 h-10 mb-6 ${isActive ? 'text-neon-green' : 'text-white/50'}`} />
+                        <h3 className="text-lg font-bold tracking-widest text-cyber-muted mb-2">{plan.name}</h3>
+                        <div className="flex items-baseline gap-1">
+                            <span className="text-4xl font-black text-white">{plan.price}</span>
+                            <span className="text-sm text-cyber-muted">{plan.period}</span>
+                        </div>
+                    </div>
+
+                    <ul className="space-y-4 mb-8">
+                        {plan.features.map((feat, i) => (
+                            <li key={i} className="flex items-center gap-3 text-sm text-gray-400">
+                                <Check className="w-4 h-4 text-white" />
+                                {feat}
+                            </li>
+                        ))}
+                    </ul>
+
+                    <button
+                        onClick={() => handleSubscribe(plan)}
+                        disabled={isProcessing || isActive}
+                        className={`
+                            w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all
+                            ${isActive 
+                                ? 'bg-neon-green text-black cursor-default' 
+                                : 'bg-white text-black hover:bg-gray-200 hover:scale-[1.02] active:scale-95'
+                            }
+                        `}
+                    >
+                        {isProcessing ? (
+                            <>
+                                <Loader2 className="w-5 h-5 animate-spin" /> AUTHORIZING...
+                            </>
+                        ) : isActive ? (
+                            <>
+                                <Check className="w-5 h-5" /> ACTIVE PLAN
+                            </>
+                        ) : !isConnected ? (
+                            "CONNECT WALLET"
+                        ) : (
+                            "SUBSCRIBE NOW"
+                        )}
+                    </button>
+                </div>
+            );
         })}
       </div>
+
     </div>
   );
 }
