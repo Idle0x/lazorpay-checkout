@@ -4,51 +4,25 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { 
-  Zap, 
-  Menu, 
-  X, 
-  ChevronDown, 
-  Wallet,
-  Copy,
-  ExternalLink,
-  LogOut,
-  User,
+  Zap, Menu, X, ChevronDown, Wallet, Copy, ExternalLink, LogOut, User
 } from "lucide-react";
-import { useLazorContext } from "@/components/Lazorkit/LazorProvider";
-import { useWallet } from "@lazorkit/wallet";
+import { useLazorContext } from "@/components/Lazorkit/LazorProvider"; // IMPORT OUR NEW HOOK
 
 export function GlobalHeader() {
   const pathname = usePathname();
-  const { isConnected, wallet, clearSession, saveSession } = useLazorContext();
-  const { connect } = useWallet();
+  // USE REAL AUTH FUNCTIONS
+  const { isConnected, wallet, connectAuth, disconnectAuth } = useLazorContext();
   
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [walletMenuOpen, setWalletMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  // Scroll effect for Glassmorphism
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
-
-  const handleConnect = async () => {
-    try {
-      const data = await connect();
-      if (data?.smartWallet) {
-        saveSession({
-          credentialId: data.credentialId || "",
-          passkeyPubkey: data.passkeyPubkey ? JSON.stringify(data.passkeyPubkey) : "",
-          smartWallet: data.smartWallet,
-          walletDevice: data.walletDevice || "web"
-        });
-      }
-    } catch (e) {
-      console.error("Connection failed", e);
-    }
-  };
 
   const handleCopy = () => {
     if (wallet?.smartWallet) {
@@ -65,21 +39,19 @@ export function GlobalHeader() {
     { name: "Send", href: "/send" },
     { name: "Mint", href: "/mint" },
     { name: "Trade", href: "/trade" },
-    { name: "Subscribe", href: "/subs" }
+    { name: "Subs", href: "/subs" } // Added Subs
   ];
 
   return (
     <header 
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled 
-          ? "glass-strong shadow-lg shadow-black/40 py-2" 
-          : "bg-transparent py-4"
+        scrolled ? "glass-strong shadow-lg shadow-black/40 py-2" : "bg-transparent py-4"
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between">
           
-          {/* Logo Brand */}
+          {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group">
             <div className="relative">
               <div className="absolute inset-0 bg-emerald-500/20 blur-xl rounded-full group-hover:bg-emerald-500/30 transition-all" />
@@ -89,7 +61,7 @@ export function GlobalHeader() {
             </div>
             <div className="hidden sm:block">
               <div className="text-lg font-bold text-white tracking-tight leading-none">
-                LAZOR<span className="text-gradient">PAY</span>
+                LAZOR<span className="text-emerald-400">PAY</span>
               </div>
               <div className="text-[9px] text-white/40 tracking-[0.3em] font-mono mt-1">
                 HUB // V2
@@ -97,7 +69,7 @@ export function GlobalHeader() {
             </div>
           </Link>
 
-          {/* Desktop Navigation Pills */}
+          {/* Nav Pills */}
           <nav className="hidden lg:flex items-center bg-white/5 rounded-full p-1 border border-white/5 backdrop-blur-md">
             {navItems.map((item) => {
               const isActive = pathname === item.href;
@@ -106,9 +78,7 @@ export function GlobalHeader() {
                   key={item.name}
                   href={item.href}
                   className={`relative px-4 py-1.5 rounded-full text-xs font-medium transition-all duration-300 ${
-                    isActive 
-                      ? "text-white bg-white/10 shadow-inner" 
-                      : "text-white/60 hover:text-white hover:bg-white/5"
+                    isActive ? "text-black bg-white shadow-inner font-bold" : "text-white/60 hover:text-white hover:bg-white/5"
                   }`}
                 >
                   {item.name}
@@ -127,19 +97,15 @@ export function GlobalHeader() {
                   onClick={() => setWalletMenuOpen(!walletMenuOpen)}
                   className="flex items-center gap-3 glass hover:glass-strong px-4 py-2 rounded-xl transition-all group border-white/10"
                 >
-                  {/* Avatar Avatar */}
                   <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
                       <User className="w-4 h-4 text-white" />
                   </div>
-                  
-                  {/* Text Info */}
                   <div className="hidden sm:flex flex-col items-start text-left">
                     <div className="text-[10px] text-emerald-400 font-bold tracking-wide">CONNECTED</div>
                     <div className="text-xs font-mono text-white/80">
                       {wallet.smartWallet.slice(0, 4)}...{wallet.smartWallet.slice(-4)}
                     </div>
                   </div>
-                  
                   <ChevronDown className={`w-4 h-4 text-white/40 transition-transform duration-300 ${walletMenuOpen ? 'rotate-180' : ''}`} />
                 </button>
 
@@ -148,20 +114,9 @@ export function GlobalHeader() {
                   <>
                     <div className="fixed inset-0 z-40" onClick={() => setWalletMenuOpen(false)} />
                     <div className="absolute right-0 mt-3 w-72 glass-strong rounded-2xl border border-white/20 shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                      
-                      {/* Balance Card */}
-                      <div className="p-5 bg-gradient-to-br from-white/5 to-transparent border-b border-white/10">
-                        <div className="text-xs text-white/60 mb-1 font-medium">Total Balance</div>
-                        <div className="text-3xl font-bold text-white tracking-tight">4.20 SOL</div>
-                        <div className="text-xs text-emerald-400 mt-1 flex items-center gap-1">
-                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Live on Devnet
-                        </div>
-                      </div>
-
-                      {/* Actions List */}
                       <div className="p-2 space-y-1">
                         <div className="px-3 py-2">
-                            <div className="text-[10px] text-white/40 uppercase tracking-wider font-bold mb-2">Wallet</div>
+                            <div className="text-[10px] text-white/40 uppercase tracking-wider font-bold mb-2">Smart Wallet</div>
                             <div className="flex items-center justify-between bg-black/20 p-2 rounded-lg border border-white/5">
                                 <span className="text-xs font-mono text-white/80 truncate w-32">{wallet.smartWallet}</span>
                                 <button onClick={handleCopy} className="text-white/60 hover:text-white transition-colors">
@@ -177,12 +132,9 @@ export function GlobalHeader() {
                         
                         <div className="h-px bg-white/10 my-1" />
                         
-                        <button 
-                          onClick={clearSession}
-                          className="w-full flex items-center gap-3 px-3 py-2 hover:bg-red-500/10 rounded-lg transition-colors text-left group"
-                        >
+                        <button onClick={disconnectAuth} className="w-full flex items-center gap-3 px-3 py-2 hover:bg-red-500/10 rounded-lg transition-colors text-left group">
                           <LogOut className="w-4 h-4 text-white/60 group-hover:text-red-500" />
-                          <span className="text-sm text-white/80 group-hover:text-red-500">Disconnect Session</span>
+                          <span className="text-sm text-white/80 group-hover:text-red-500">Disconnect</span>
                         </button>
                       </div>
                     </div>
@@ -191,7 +143,7 @@ export function GlobalHeader() {
               </div>
             ) : (
               <button
-                onClick={handleConnect}
+                onClick={connectAuth}
                 className="btn-primary flex items-center gap-2 shadow-lg shadow-emerald-500/20"
               >
                 <Wallet className="w-4 h-4" />
@@ -200,10 +152,7 @@ export function GlobalHeader() {
             )}
 
             {/* Mobile Menu Toggle */}
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 glass rounded-xl text-white/80 hover:text-white"
-            >
+            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="lg:hidden p-2 glass rounded-xl text-white/80 hover:text-white">
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>
@@ -220,13 +169,10 @@ export function GlobalHeader() {
                 href={item.href}
                 onClick={() => setMobileMenuOpen(false)}
                 className={`flex items-center justify-between px-4 py-3 rounded-xl transition-colors ${
-                  pathname === item.href 
-                    ? "bg-white/10 text-white font-bold" 
-                    : "text-white/60 hover:text-white hover:bg-white/5"
+                  pathname === item.href ? "bg-white text-black font-bold" : "text-white/60 hover:text-white hover:bg-white/5"
                 }`}
               >
                 {item.name}
-                {pathname === item.href && <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />}
               </Link>
             ))}
           </nav>
