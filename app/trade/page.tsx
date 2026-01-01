@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { ArrowLeft, Activity, Lock, Unlock, Zap, TrendingUp, TrendingDown, RefreshCw } from "lucide-react";
+// FIX: Added 'Fingerprint' to the imports below
+import { ArrowLeft, Activity, Lock, Unlock, Zap, TrendingUp, TrendingDown, RefreshCw, Fingerprint } from "lucide-react";
 import Link from "next/link";
 import { useWallet } from "@lazorkit/wallet";
 import { useLazorContext } from "@/components/Lazorkit/LazorProvider";
