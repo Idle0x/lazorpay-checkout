@@ -6,7 +6,7 @@ import { Connection } from "@solana/web3.js";
 
 // --- CONFIGURATION ---
 const RPC_URL = "https://api.devnet.solana.com";
-const PAYMASTER_URL = "https://kora.devnet.lazorkit.com";
+// const PAYMASTER_URL = "https://kora.devnet.lazorkit.com"; // Standard
 const PORTAL_URL = "https://portal.lazor.sh";
 
 // --- CONTEXT DEFINITIONS ---
@@ -84,8 +84,10 @@ export function LazorProvider({ children }: { children: ReactNode }) {
     <SDKProvider 
       rpcUrl={RPC_URL}
       portalUrl={PORTAL_URL}
-      configPaymaster={{ paymasterUrl: PAYMASTER_URL }}
-      isDebug={true} // Helpful for debugging the bounty
+      // FIX: The Web SDK uses 'paymaster' or simply configures it internally via the portal
+      // Removing explicit paymaster config props that cause type errors on the web version
+      // The 'feeMode: paymaster' in connect() handles the logic
+      isDebug={true} 
     >
       <LazorLogic>{children}</LazorLogic>
     </SDKProvider>
