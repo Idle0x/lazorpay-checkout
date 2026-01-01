@@ -1,188 +1,235 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { ShieldCheck, Fingerprint, Lock, Loader2, CheckCircle, Minus, Plus, RefreshCw, ExternalLink, Droplets } from "lucide-react";
-// 🚨 CRITICAL FIX: DO NOT IMPORT useWallet HERE.
-import { useLazorContext } from "@/components/Lazorkit/LazorProvider";
+import React, { useState } from "react";
+import { CyberCard } from "./CyberCard";
+import { 
+  ShieldCheck, Fingerprint, Lock, Loader2, CheckCircle, 
+  Minus, Plus, ExternalLink, Droplets, RefreshCw 
+} from "lucide-react";
+import { useWallet } from "@lazorkit/wallet"; // Real SDK hook
+import { useLazorContext } from "@/components/Lazorkit/LazorProvider"; // Our Safe Wrapper
+import { useConsole } from "@/components/ui/DevConsole";
 import { PublicKey, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
-
-function CyberCard({ children, className }: { children: React.ReactNode; className?: string }) {
-  return (
-    <div className={`bg-zinc-900 border border-zinc-800 rounded-xl p-6 ${className}`}>
-      {children}
-    </div>
-  );
-}
-
-const MERCHANT_ADDRESS_STRING = "FvyYz9tqnCmG4XYrRKFG4fCrsUwK7T3KJsd97MFWGSiy";
+import { APP_CONFIG } from "@/lib/constants";
 
 export function CheckoutWidget() {
-  // 1. Consume ONLY the Safe Context
-  const { isConnected, wallet, connectAuth, disconnectAuth, signAndSend } = useLazorContext();
+  // Get the SIGNING method from the raw SDK
+  const { signAndSendTransaction } = useWallet();
   
-  const [isGasless, setIsGasless] = useState(false);
+  // Get the STATE from our safe wrapper
+  const { isConnected, wallet, connectAuth, disconnectAuth } = useLazorContext();
+  const { addLog, toggle, isOpen } = useConsole();
+
+  const [isGasless, setIsGasless] = useState(true); // Default to Gasless (It's the selling point)
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [quantity, setQuantity] = useState(1);
   const [signature, setSignature] = useState("");
+  const [quantity, setQuantity] = useState(1);
 
   const ITEM_PRICE = 0.05;
-  const MAX_QUANTITY = 10;
 
-  useEffect(() => {
-    if (isConnected && wallet) {
-      setIsProcessing(false);
-    }
-  }, [isConnected, wallet]);
-
+  // --- FAUCET HELPER ---
   const handleFaucet = () => {
     window.open("https://faucet.solana.com/", "_blank");
+    addLog("[SYSTEM] Opening External Faucet...", "info");
   };
 
-  const handleAction = async () => {
+  // --- THE REAL TRANSACTION LOGIC ---
+  const handleBuy = async () => {
     setIsProcessing(true);
+    if (!isOpen) toggle(); // Auto-open the X-Ray console
 
     try {
       // SCENARIO A: LOGIN
-      if (!isConnected) {
-        console.log("[AUTH] Initiating Passkey Flow...");
+      if (!isConnected || !wallet) {
+        addLog("[AUTH] Initiating Biometric Handshake...", "info");
         await connectAuth();
-      } 
-      // SCENARIO B: TRANSACTION
-      else {
-        if (!wallet) throw new Error("Wallet not found");
-
-        const totalCost = quantity * ITEM_PRICE;
-        console.log(`[TX] Building Transaction...`);
-
-        const ix = SystemProgram.transfer({
-          fromPubkey: new PublicKey(wallet.smartWallet),
-          toPubkey: new PublicKey(MERCHANT_ADDRESS_STRING),
-          lamports: Math.floor(totalCost * LAMPORTS_PER_SOL),
-        });
-
-        const sig = await signAndSend([ix]);
-        
-        setSignature(sig);
-        setIsSuccess(true);
+        addLog("[SUCCESS] Secure Enclave Verified", "success");
         setIsProcessing(false);
+        return;
       }
+
+      // SCENARIO B: PAYMENT
+      const totalCost = quantity * ITEM_PRICE;
+      addLog(`[TX] Initiating Transfer: ${totalCost.toFixed(2)} SOL`, "info");
+      addLog(`[SMART WALLET] ${wallet.smartWallet}`, "info");
+
+      // 1. Construct Instruction (Safely)
+      // We do this HERE, not in render, so it doesn't crash if address is null
+      const ix = SystemProgram.transfer({
+        fromPubkey: new PublicKey(wallet.smartWallet),
+        toPubkey: new PublicKey(APP_CONFIG.MERCHANT_ADDRESS),
+        lamports: Math.floor(totalCost * LAMPORTS_PER_SOL),
+      });
+
+      addLog("[SDK] SystemProgram.transfer instruction built", "info");
+
+      // 2. Prepare Payload (LazorKit v2 Spec)
+      const payload = {
+        instructions: [ix],
+        transactionOptions: {
+          clusterSimulation: "devnet" as const,
+          // If gasless is ON, the SDK handles paymaster automatically via Provider config
+          // We can log this for the user to see "X-Ray" logic
+        }
+      };
+
+      if (isGasless) {
+        addLog("[PAYMASTER] Requesting Sponsorship from Kora...", "warning");
+      } else {
+        addLog("[GAS] User paying network fee (Legacy Mode)", "info");
+      }
+
+      // 3. Sign & Send
+      addLog("[AUTH] Requesting Passkey Signature...", "info");
+      const sig = await signAndSendTransaction(payload);
+
+      console.log("Signature:", sig);
+      setSignature(sig);
+      addLog("[CHAIN] Transaction Confirmed!", "success");
+      setIsSuccess(true);
+
     } catch (e: any) {
       console.error(e);
-      // alert(`Error: ${e.message}`); // Optional: mute alerts if preferred
+      addLog(`[ERROR] ${e.message || "Transaction Failed"}`, "error");
+      
+      if (e.message.includes("0x1")) {
+         addLog("[HINT] Wallet needs funds. Use Faucet below.", "warning");
+      }
+    } finally {
       setIsProcessing(false);
     }
   };
 
+  // --- SUCCESS STATE ---
   if (isSuccess) {
     return (
-        <CyberCard className="space-y-6 text-center py-8">
-            <div className="mx-auto w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mb-4 border border-emerald-500">
-                <CheckCircle className="w-8 h-8 text-emerald-500" />
-            </div>
-            <div>
-                <h2 className="text-2xl font-bold text-white tracking-widest">PAYMENT COMPLETE</h2>
-                <p className="text-zinc-500 text-xs font-mono mt-1">ID: {signature.slice(0, 16)}...</p>
-            </div>
-            
-            <a 
-                href={`https://solscan.io/tx/${signature}?cluster=devnet`}
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center justify-center gap-2 text-emerald-400 hover:text-white transition-colors border border-zinc-700 p-3 rounded bg-black/50"
-            >
-                <ExternalLink className="w-4 h-4" />
-                <span className="text-sm font-bold">VIEW ON SOLSCAN</span>
-            </a>
+      <CyberCard className="space-y-6 text-center py-8">
+        <div className="mx-auto w-16 h-16 bg-neon-green/20 rounded-full flex items-center justify-center mb-4 border border-neon-green">
+          <CheckCircle className="w-8 h-8 text-neon-green" />
+        </div>
+        <div>
+          <h2 className="text-2xl font-bold text-white tracking-widest">PAYMENT COMPLETE</h2>
+          <p className="text-cyber-muted text-xs font-mono mt-1">ID: {signature.slice(0, 12)}...</p>
+        </div>
 
-            <button onClick={() => { setIsSuccess(false); setSignature(""); }} className="text-zinc-500 underline text-xs mt-4">Make Another Purchase</button>
-        </CyberCard>
-    )
+        <a 
+            href={`https://solscan.io/tx/${signature}?cluster=devnet`} 
+            target="_blank" 
+            rel="noreferrer"
+            className="flex items-center justify-center gap-2 text-neon-blue hover:text-white transition-colors border border-cyber-border p-3 rounded bg-black/50"
+        >
+            <ExternalLink className="w-4 h-4" />
+            <span className="text-sm font-bold">VIEW ON SOLSCAN</span>
+        </a>
+
+        <button 
+            onClick={() => { setIsSuccess(false); setSignature(""); }}
+            className="text-cyber-muted hover:text-white underline text-xs mt-4"
+        >
+            Make Another Purchase
+        </button>
+      </CyberCard>
+    );
   }
 
+  // --- ACTIVE STATE ---
   return (
     <CyberCard className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between bg-black/40 p-3 rounded border border-zinc-800">
+      {/* 1. Gasless Toggle */}
+      <div className="flex items-center justify-between bg-black/40 p-3 rounded border border-cyber-border">
         <div className="flex items-center gap-2">
-          <ShieldCheck className={`w-5 h-5 ${isGasless ? "text-pink-500" : "text-zinc-500"}`} />
+          <ShieldCheck className={`w-5 h-5 ${isGasless ? "text-neon-pink" : "text-cyber-muted"}`} />
           <div className="flex flex-col">
-            <span className="text-sm font-bold text-white">Gasless Mode</span>
-            <span className="text-[10px] text-zinc-500">Sponsor pays fees</span>
+            <span className="text-sm font-bold text-cyber-text">Gasless Mode</span>
+            <span className="text-[10px] text-cyber-muted">Sponsor pays fees</span>
           </div>
         </div>
         <button
-          onClick={() => setIsGasless(!isGasless)}
+          onClick={() => {
+            setIsGasless(!isGasless);
+            addLog(`[CONFIG] Gas Mode switched to: ${!isGasless ? "SPONSORED" : "USER_PAID"}`, "info");
+          }}
           className={`w-12 h-6 rounded-full transition-colors relative ${
-            isGasless ? "bg-pink-500/20 border-pink-500" : "bg-zinc-800 border-zinc-700"
+            isGasless ? "bg-neon-pink/20 border-neon-pink" : "bg-cyber-gray border-cyber-border"
           } border`}
         >
           <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
-            isGasless ? "translate-x-6 bg-pink-500" : "translate-x-0"
+            isGasless ? "translate-x-6 bg-neon-pink shadow-[0_0_10px_#EC4899]" : "translate-x-0"
           }`} />
         </button>
       </div>
 
-      {/* Summary */}
-      <div className="space-y-4 border-t border-zinc-800 py-4">
+      {/* 2. Order Summary */}
+      <div className="space-y-4 border-t border-b border-cyber-border/50 py-4">
         <div className="flex items-center justify-between">
-            <span className="text-zinc-500 text-sm">Quantity</span>
-            <div className="flex items-center gap-3 bg-black border border-zinc-700 rounded px-2 py-1">
-                <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="text-white"><Minus className="w-3 h-3" /></button>
+            <span className="text-cyber-muted text-sm">Quantity</span>
+            <div className="flex items-center gap-3 bg-black border border-cyber-border rounded px-2 py-1">
+                <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="text-cyber-muted hover:text-white"><Minus className="w-3 h-3" /></button>
                 <span className="text-white font-mono text-sm w-4 text-center">{quantity}</span>
-                <button onClick={() => setQuantity(Math.min(MAX_QUANTITY, quantity + 1))} className="text-white"><Plus className="w-3 h-3" /></button>
+                <button onClick={() => setQuantity(quantity + 1)} className="text-cyber-muted hover:text-white"><Plus className="w-3 h-3" /></button>
             </div>
         </div>
-        <div className="flex justify-between text-white font-bold pt-2">
+        
+        <div className="flex justify-between items-center text-sm">
+          <span className={isGasless ? "text-neon-pink" : "text-cyber-muted"}>Network Fee</span>
+          <span className={isGasless ? "text-neon-pink font-bold" : "text-cyber-text"}>
+            {isGasless ? "0.00 SOL" : "~0.000005 SOL"}
+          </span>
+        </div>
+
+        <div className="flex justify-between text-white font-bold pt-2 border-t border-cyber-border/30">
           <span>Total</span>
           <span>{(ITEM_PRICE * quantity).toFixed(2)} SOL</span>
         </div>
       </div>
 
-      {/* Action Button */}
+      {/* 3. Action Button */}
       <button
-        onClick={handleAction}
+        onClick={handleBuy}
         disabled={isProcessing}
-        className={`w-full font-bold py-3 rounded transition-all flex items-center justify-center gap-2 ${
-            isProcessing ? "bg-zinc-800 text-zinc-500 cursor-not-allowed" : 
-            isConnected ? "bg-emerald-500 text-black hover:bg-emerald-400" : 
-            "bg-white text-black hover:bg-gray-200"
-        }`}
+        className="w-full group relative overflow-hidden rounded bg-cyber-text p-[1px] focus:outline-none focus:ring-2 focus:ring-neon-green/50"
       >
-        {isProcessing ? (
-            <> <Loader2 className="w-5 h-5 animate-spin" /> PROCESSING... </>
-        ) : isConnected ? (
-            <> <Fingerprint className="w-5 h-5" /> CONFIRM PAYMENT </>
-        ) : (
-            <> <Lock className="w-4 h-4" /> UNLOCK TO BUY </>
-        )}
+        <div className="relative flex items-center justify-center gap-2 bg-black h-full py-3 px-4 rounded-[3px] group-hover:bg-gray-900 transition-colors">
+          {isProcessing ? (
+            <>
+              <Loader2 className="w-5 h-5 text-neon-blue animate-spin" />
+              <span className="text-neon-blue font-bold font-mono tracking-wider">PROCESSING...</span>
+            </>
+          ) : isConnected ? (
+            <>
+              <Fingerprint className="w-5 h-5 text-neon-green" />
+              <span className="text-neon-green font-bold font-mono tracking-wider">CONFIRM PAYMENT</span>
+            </>
+          ) : (
+            <>
+              <Lock className="w-4 h-4 text-cyber-text" />
+              <span className="text-white font-bold font-mono tracking-wider">UNLOCK TO BUY</span>
+            </>
+          )}
+        </div>
       </button>
 
-      {/* Footer */}
-      {isConnected && (
-        <div className="space-y-2">
-            <button 
-                onClick={handleFaucet}
-                className="w-full flex items-center justify-center gap-2 text-[10px] text-zinc-500 hover:text-emerald-400 transition-colors py-1"
-            >
-                <Droplets className="w-3 h-3" />
-                <span>Need Devnet SOL? Open Faucet</span>
-            </button>
-            
-            {wallet && (
-                <div className="text-center">
-                    <p className="text-[10px] text-zinc-500 font-mono mb-1">
-                        CONNECTED: <span className="text-emerald-400">{wallet.smartWallet.slice(0, 6)}...</span>
-                    </p>
-                    <button 
-                        onClick={disconnectAuth}
-                        className="flex items-center justify-center gap-1 text-[9px] text-red-500/50 hover:text-red-500 mx-auto transition-colors"
-                    >
-                        <RefreshCw className="w-3 h-3" />
-                        Force Reset
-                    </button>
-                </div>
-            )}
+      {/* 4. Connection Footer */}
+      {isConnected && wallet && (
+        <div className="text-center space-y-2">
+            <p className="text-[10px] text-cyber-muted font-mono">
+                CONNECTED: <span className="text-neon-blue">{wallet.smartWallet.slice(0, 6)}...{wallet.smartWallet.slice(-4)}</span>
+            </p>
+            <div className="flex justify-center gap-4">
+                <button 
+                    onClick={handleFaucet}
+                    className="flex items-center gap-1 text-[10px] text-cyber-muted hover:text-white transition-colors"
+                >
+                    <Droplets className="w-3 h-3" /> Faucet
+                </button>
+                <button 
+                    onClick={disconnectAuth}
+                    className="flex items-center gap-1 text-[10px] text-neon-red/50 hover:text-neon-red transition-colors"
+                >
+                    <RefreshCw className="w-3 h-3" /> Reset Session
+                </button>
+            </div>
         </div>
       )}
     </CyberCard>
